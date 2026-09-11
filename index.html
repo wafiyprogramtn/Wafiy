@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnet — programme de fidélité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E7;
+    --paper-2:#EFE7D6;
+    --ink:#241F1A;
+    --ink-soft:#6B6156;
+    --line:#D9CFBC;
+    --accent:#C4432B;
+    --accent-soft:#C4432B22;
+    --good:#2F6B4F;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 1px 1px, #00000009 1px, transparent 0) 0 0/16px 16px,
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Fraunces',serif;}
+  #app{max-width:480px;margin:0 auto;padding:24px 18px 60px;}
+
+  .cover{
+    text-align:left;
+    padding-top:12px;
+  }
+  .cover .mark{
+    width:52px;height:52px;border-radius:50%;
+    border:2.5px solid var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;font-weight:700;font-size:22px;
+    margin-bottom:18px;
+    transform:rotate(-6deg);
+  }
+  .cover h1{font-size:2.1rem;line-height:1.08;margin:0 0 8px;font-weight:600;}
+  .cover p{color:var(--ink-soft);font-size:0.98rem;line-height:1.5;margin:0 0 30px;max-width:34ch;}
+
+  .stack{display:flex;flex-direction:column;gap:10px;}
+
+  button, .btn{
+    font-family:'Inter',sans-serif;
+    font-size:0.98rem;
+    font-weight:600;
+    border-radius:10px;
+    border:1.5px solid var(--ink);
+    padding:14px 18px;
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+    text-align:left;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    transition:transform .12s ease;
+  }
+  button:active{transform:scale(0.98);}
+  .btn-primary{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .btn-ghost{border-color:var(--line);color:var(--ink-soft);font-weight:500;}
+  .btn-block{width:100%;justify-content:center;}
+  .btn-sm{padding:9px 14px;font-size:0.85rem;border-radius:8px;}
+
+  .card{
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .eyebrow{font-size:0.78rem;color:var(--ink-soft);margin:0 0 4px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:0.82rem;color:var(--ink-soft);margin-bottom:5px;}
+  .field input, .field select, .field textarea{
+    width:100%;
+    border:1.5px solid var(--line);
+    border-radius:9px;
+    padding:11px 12px;
+    font-size:0.98rem;
+    font-family:'Inter',sans-serif;
+    background:#fff;
+    color:var(--ink);
+  }
+  .field input:focus, .field textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .swatches{display:flex;gap:10px;flex-wrap:wrap;}
+  .swatch{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;}
+  .swatch.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--paper);}
+
+  .backrow{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+  .backrow button{border:none;padding:6px;background:none;font-size:1.2rem;}
+  .backrow h2{margin:0;font-size:1.25rem;}
+
+  .stamps{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;}
+  .stamp{
+    width:34px;height:34px;border-radius:50%;
+    border:2px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;
+  }
+  .stamp.filled{background:var(--accent);color:#fff;}
+
+  .qrbox{
+    background:#fff;border:1.5px solid var(--ink);border-radius:12px;
+    padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;
+    margin:16px 0;
+  }
+  .code{
+    font-family:monospace;letter-spacing:2px;font-weight:700;font-size:1.1rem;
+  }
+  .muted{color:var(--ink-soft);font-size:0.88rem;}
+  .banner{
+    border:1.5px solid var(--good);background:#2F6B4F14;
+    border-radius:10px;padding:12px 14px;font-size:0.9rem;color:var(--good);font-weight:600;
+    margin-bottom:14px;
+  }
+  .error{
+    border:1.5px solid var(--accent);background:var(--accent-soft);
+    border-radius:10px;padding:12px 14px;font-size:0.88rem;color:var(--accent);
+    margin-bottom:14px;
+  }
+  .customer-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 0;border-bottom:1px solid var(--line);font-size:0.9rem;
+  }
+  .customer-row:last-child{border-bottom:none;}
+  .pill{
+    font-size:0.75rem;background:var(--paper-2);border-radius:20px;padding:3px 9px;
+    color:var(--ink-soft);
+  }
+  .tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .tab{
+    flex:1;text-align:center;padding:9px;border-radius:8px;border:1.5px solid var(--line);
+    font-size:0.85rem;font-weight:600;color:var(--ink-soft);cursor:pointer;
+  }
+  .tab.active{border-color:var(--ink);color:var(--ink);background:var(--paper-2);}
+  .empty{color:var(--ink-soft);font-size:0.88rem;padding:20px 0;text-align:center;}
+  .btn-scan{background:var(--ink);color:var(--paper);border-color:var(--ink);justify-content:center;gap:8px;}
+  .or-divider{text-align:center;color:var(--ink-soft);font-size:0.8rem;margin:12px 0;}
+  .scanner-overlay{
+    position:fixed;inset:0;background:#000;z-index:999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .scanner-overlay video{width:100%;max-width:480px;aspect-ratio:3/4;object-fit:cover;}
+  .scanner-frame{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:220px;height:220px;border:3px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 2000px rgba(0,0,0,0.45);
+  }
+  .scanner-close{
+    position:absolute;top:20px;right:20px;background:#fff;color:#000;
+    border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;
+  }
+  .scanner-hint{position:absolute;bottom:40px;color:#fff;font-size:0.9rem;text-align:center;padding:0 30px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const state = {
+  view: 'home',
+  merchantCode: null,
+  customerId: null,
+  error: null,
+  loading: false,
+};
+
+const CATEGORIES = [
+  {id:'cafe', label:'Café'},
+  {id:'resto', label:'Restaurant'},
+  {id:'coiffeur', label:'Coiffeur / Salon'},
+  {id:'autre', label:'Autre commerce'},
+];
+const ACCENTS = ['#C4432B','#2451B0','#2F6B4F','#6B3FA0','#B8860B','#1A1A1A'];
+
+function genCode(len){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s='';
+  for(let i=0;i<len;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+async function storeGet(key){
+  try{
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : null;
+  }catch(e){ return null; }
+}
+async function storeSet(key, value){
+  try{
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  }catch(e){ return false; }
+}
+function storeClear(key){
+  try{ localStorage.removeItem(key); }catch(e){}
+}
+
+/* ---------- SUPABASE (real database) ---------- */
+const SUPABASE_URL = 'https://rhualmjmwpzplabnjtok.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJodWFsbWptd3B6cGxhYm5qdG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NDMyNTAsImV4cCI6MjEwNDUxOTI1MH0.pnaPU-ZIYjL6CdVK0nvE2jJ5Xdrw2-YGF3kmYEA_Wqc';
+
+async function sb(path, options={}){
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    method: options.method || 'GET',
+    body: options.body,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': options.prefer || 'return=representation'
+    }
+  });
+  if(!res.ok){
+    const text = await res.text().catch(()=> '');
+    throw new Error('Erreur base de données ('+res.status+'): '+text);
+  }
+  if(res.status === 204) return null;
+  return res.json();
+}
+
+async function dbGetMerchant(code){
+  const rows = await sb('merchants?code=eq.'+encodeURIComponent(code)+'&select=*');
+  return (rows && rows[0]) || null;
+}
+async function dbCreateMerchant(m){
+  const rows = await sb('merchants', {method:'POST', body: JSON.stringify(m)});
+  return rows[0];
+}
+async function dbGetCustomers(code){
+  return await sb('customers?merchant_code=eq.'+encodeURIComponent(code)+'&select=*&order=created_at.desc') || [];
+}
+async function dbGetCustomer(id, merchantCode){
+  const rows = await sb('customers?id=eq.'+encodeURIComponent(id)+'&merchant_code=eq.'+encodeURIComponent(merchantCode)+'&select=*');
+  return (rows && rows[0]) || null;
+}
+async function dbCreateCustomer(c){
+  const rows = await sb('customers', {method:'POST', body: JSON.stringify(c)});
+  return rows[0];
+}
+async function dbUpdateCustomer(id, patch){
+  const rows = await sb('customers?id=eq.'+encodeURIComponent(id), {method:'PATCH', body: JSON.stringify(patch)});
+  return rows[0];
+}
+async function dbGetCampaigns(code){
+  return await sb('campaigns?merchant_code=eq.'+encodeURIComponent(code)+'&select=*&order=created_at.desc') || [];
+}
+async function dbCreateCampaign(c){
+  const rows = await sb('campaigns', {method:'POST', body: JSON.stringify(c)});
+  return rows[0];
+}
+
+function renderQR(container, value){
+  container.innerHTML = '';
+  const img = document.createElement('img');
+  img.alt = 'QR code';
+  img.width = 200; img.height = 200;
+  img.style.background = '#fff';
+  img.style.borderRadius = '6px';
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(value);
+  img.onerror = () => {
+    container.innerHTML = '<div class="empty" style="border:1.5px dashed var(--line);border-radius:10px;padding:20px;">QR indisponible hors connexion.<br>Utilisez le code ci-dessous.</div>';
+  };
+  container.appendChild(img);
+}
+
+function scannerSupported(){
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && 'BarcodeDetector' in window);
+}
+
+async function openScanner(onDetected){
+  const overlay = el(`
+    <div class="scanner-overlay">
+      <video autoplay playsinline muted></video>
+      <div class="scanner-frame"></div>
+      <button class="scanner-close" id="close-scan">✕</button>
+      <div class="scanner-hint">Visez le QR code</div>
+    </div>
+  `);
+  document.body.appendChild(overlay);
+  const video = overlay.querySelector('video');
+  let stream, timer, stopped = false;
+
+  function cleanup(){
+    stopped = true;
+    if(timer) clearInterval(timer);
+    if(stream) stream.getTracks().forEach(t => t.stop());
+    overlay.remove();
+  }
+  overlay.querySelector('#close-scan').onclick = cleanup;
+
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    video.srcObject = stream;
+    await video.play();
+    const detector = new BarcodeDetector({formats:['qr_code']});
+    timer = setInterval(async () => {
+      if(stopped) return;
+      try{
+        const codes = await detector.detect(video);
+        if(codes && codes.length){
+          const value = codes[0].rawValue;
+          cleanup();
+          onDetected(value);
+        }
+      }catch(e){ /* keep trying */ }
+    }, 300);
+  }catch(e){
+    cleanup();
+    onDetected(null, 'Caméra indisponible : ' + ((e && e.message) || 'accès refusé'));
+  }
+}
+
+function el(html){
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstChild;
+}
+
+function render(node){
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  app.appendChild(node);
+}
+
+/* ---------- HOME ---------- */
+function viewHome(){
+  const wrap = el(`
+    <div class="cover">
+      <div class="mark">F</div>
+      <h1>Un carnet de fidélité, sans carte à imprimer.</h1>
+      <p>Le client scanne une fois, il a son compte. Chaque achat ajoute un tampon. Au bout du programme, il a sa récompense.</p>
+      <div class="stack">
+        <button class="btn-primary btn-block" id="be-merchant">Je suis commerçant → créer / gérer mon programme</button>
+        <button class="btn-block" id="be-customer">Je suis client → rejoindre un programme</button>
+      </div>
+    </div>
+  `);
+  wrap.querySelector('#be-merchant').onclick = () => { state.view='merchant-entry'; draw(); };
+  wrap.querySelector('#be-customer').onclick = () => { state.view='customer-entry'; draw(); };
+  return wrap;
+}
+
+/* ---------- MERCHANT: entry (new or resume) ---------- */
+function viewMerchantEntry(){
+  const wrap = el(`
+    <div>
+      <div class="backrow">
+        <button id="back">←</button><h2>Commerçant</h2>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Nouveau ici ?</p>
+        <button class="btn-primary btn-block" id="new">Créer mon programme</button>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Déjà un programme ?</p>
+        <div class="field">
+          <label>Code de votre programme</label>
+          <input id="resume-code" placeholder="Ex. K3P9QZ" maxlength="6" style="text-transform:uppercase">
+        </div>
+        <button class="btn-block" id="resume">Ouvrir mon tableau de bord</button>
+        <div id="err"></div>
+      </div>
+    </div>
+  `);
+  wrap.querySelector('#back').onclick = () => { state.view='home'; draw(); };
+  wrap.querySelector('#new').onclick = () => { state.view='merchant-setup'; draw(); };
+  wrap.querySelector('#resume').onclick = async () => {
+    const code = wrap.querySelector('#resume-code').value.trim().toUpperCase();
+    if(!code) return;
+    const m = await dbGetMerchant(code);
+    if(!m){
+      wrap.querySelector('#err').innerHTML = '<div class="error">Aucun programme trouvé avec ce code.</div>';
+      return;
+    }
+    state.merchantCode = code;
+    await storeSet('my-merchant-code', code);
+    state.view='merchant-dashboard'; draw();
+  };
+  return wrap;
+}
+
+/* ---------- MERCHANT: setup ---------- */
+function viewMerchantSetup(){
+  let chosenAccent = ACCENTS[0];
+  const wrap = el(`
+    <div>
+      <div class="backrow"><button id="back">←</button><h2>Créer mon programme</h2></div>
+      <div class="card">
+        <div class="field">
+          <label>Nom de votre commerce</label>
+          <input id="name" placeholder="Ex. Café Andalous">
+        </div>
+        <div class="field">
+          <label>Type d'activité</label>
+          <select id="category">
+            ${CATEGORIES.map(c=>`<option value="${c.id}">${c.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Couleur de votre carte</label>
+          <div class="swatches" id="swatches">
+            ${ACCENTS.map((c,i)=>`<div class="swatch ${i===0?'selected':''}" data-c="${c}" style="background:${c}"></div>`).join('')}
+          </div>
+        </div>
+        <div class="field">
+          <label>Nombre d'achats avant récompense</label>
+          <input id="threshold" type="number" min="2" max="30" value="10">
+        </div>
+        <div class="field">
+          <label>Récompense offerte</label>
+          <input id="reward" placeholder="Ex. Un café offert">
+        </div>
+        <div id="err"></div>
+        <button class="btn-primary btn-block" id="create">Créer mon programme</button>
+      </div>
+    </div>
+  `);
+  wrap.querySelector('#back').onclick = () => { state.view='merchant-entry'; draw(); };
+  wrap.querySelectorAll('.swatch').forEach(s=>{
+    s.onclick = () => {
+      wrap.querySelectorAll('.swatch').forEach(x=>x.classList.remove('selected'));
+      s.classList.add('selected');
+      chosenAccent = s.dataset.c;
+    };
+  });
+  wrap.querySelector('#create').onclick = async () => {
+    const name = wrap.querySelector('#name').value.trim();
+    const category = wrap.querySelector('#category').value;
+    const threshold = parseInt(wrap.querySelector('#threshold').value) || 10;
+    const reward = wrap.querySelector('#reward').value.trim() || 'Un cadeau surprise';
+    if(!name){
+      wrap.querySelector('#err').innerHTML = '<div class="error">Donnez un nom à votre commerce.</div>';
+      return;
+    }
+    const code = genCode(6);
+    try{
+      await dbCreateMerchant({code, name, category, accent: chosenAccent, threshold, reward});
+    }catch(e){
+      wrap.querySelector('#err').innerHTML = '<div class="error">'+e.message+'</div>';
+      return;
+    }
+    await storeSet('my-merchant-code', code);
+    state.merchantCode = code;
+    state.view = 'merchant-dashboard';
+    draw();
+  };
+  return wrap;
+}
+
+/* ---------- MERCHANT: dashboard ---------- */
+async function viewMerchantDashboard(){
+  const code = state.merchantCode;
+  const merchant = await dbGetMerchant(code);
+  if(!merchant){ state.view='merchant-entry'; return viewMerchantEntry(); }
+  const customers = await dbGetCustomers(code);
+
+  const wrap = el(`
+    <div>
+      <div class="backrow"><button id="back">←</button><h2 style="color:${merchant.accent}">${merchant.name}</h2></div>
+
+      <div class="card">
+        <p class="eyebrow">Vos clients scannent ce QR pour rejoindre votre programme</p>
+        <div class="qrbox">
+          <div id="qr"></div>
+          <div class="code">${merchant.code}</div>
+          <div class="muted">Après ${merchant.threshold} achats → ${merchant.reward}</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="stamp">Ajouter un achat</div>
+        <div class="tab" data-tab="clients">Clients (${customers.length})</div>
+        <div class="tab" data-tab="campagne">Campagne</div>
+      </div>
+      <div id="tab-body"></div>
+    </div>
+  `);
+
+  wrap.querySelector('#back').onclick = () => { storeClear('last-session'); state.view='home'; state.merchantCode=null; draw(); };
+
+  const joinUrl = location.origin && location.origin !== 'null'
+    ? location.origin + location.pathname + '?join=' + merchant.code
+    : 'FIDELITE|REJOINDRE|' + merchant.code;
+  renderQR(wrap.querySelector('#qr'), joinUrl);
+
+  const tabBody = wrap.querySelector('#tab-body');
+  function drawStampTab(){
+    tabBody.innerHTML = '';
+    tabBody.appendChild(el(`
+      <div class="card">
+        <p class="eyebrow">Scannez la carte du client</p>
+        <button class="btn-scan btn-block" id="scan-client">📷 Scanner le QR du client</button>
+        <div class="or-divider">— ou entrez le code —</div>
+        <div class="field">
+          <label>Code du client (donné à l'inscription)</label>
+          <input id="search-code" placeholder="Ex. K3P9QZ-A7F2" style="text-transform:uppercase">
+        </div>
+        <button class="btn-block" id="search-btn">Chercher</button>
+        <div id="result"></div>
+      </div>
+    `));
+    async function lookup(cid){
+      const result = tabBody.querySelector('#result');
+      let cust;
+      try{
+        cust = await dbGetCustomer(cid, code);
+      }catch(e){
+        result.innerHTML = '<div class="error">'+e.message+'</div>';
+        return;
+      }
+      if(!cust){
+        result.innerHTML = '<div class="error">Client introuvable. Vérifiez le code.</div>';
+        return;
+      }
+      renderCustomerAction(result, cust, merchant);
+    }
+    if(!scannerSupported()){
+      tabBody.querySelector('#scan-client').style.display = 'none';
+      tabBody.querySelector('.or-divider').style.display = 'none';
+    }
+    tabBody.querySelector('#scan-client').onclick = () => {
+      openScanner((value, err) => {
+        const result = tabBody.querySelector('#result');
+        if(err){
+          result.innerHTML = '<div class="error">'+err+' — entrez le code manuellement.</div>';
+          return;
+        }
+        const parts = value.split('|');
+        const cid = (parts[parts.length-1] || value).trim().toUpperCase();
+        lookup(cid);
+      });
+    };
+    tabBody.querySelector('#search-btn').onclick = () => {
+      const cid = tabBody.querySelector('#search-code').value.trim().toUpperCase();
+      if(cid) lookup(cid);
+    };
+  }
+  function renderCustomerAction(container, cust, merchant, justEarned){
+    container.innerHTML = '';
+    const box = el(`
+      <div class="card" style="margin-top:12px;">
+        ${justEarned ? `<div class="banner">🎁 Récompense débloquée : ${merchant.reward}</div>` : ''}
+        <p class="eyebrow">${cust.first_name} ${cust.last_name||''}</p>
+        <div class="stamps">
+          ${Array.from({length: merchant.threshold}).map((_,i)=>`<div class="stamp ${i < cust.stamps ? 'filled':''}">${i<cust.stamps?'✓':''}</div>`).join('')}
+        </div>
+        <div class="muted">${cust.stamps} / ${merchant.threshold} achats</div>
+        <button class="btn-primary btn-block" id="add-stamp" style="margin-top:12px;">+ Ajouter un achat</button>
+        <div id="stamp-err"></div>
+      </div>
+    `);
+    box.querySelector('#add-stamp').onclick = async () => {
+      let stamps = cust.stamps + 1;
+      let rewards_earned = cust.rewards_earned || 0;
+      let earned = false;
+      if(stamps >= merchant.threshold){
+        stamps = 0;
+        rewards_earned += 1;
+        earned = true;
+      }
+      let updated;
+      try{
+        updated = await dbUpdateCustomer(cust.id, {stamps, rewards_earned});
+      }catch(e){
+        box.querySelector('#stamp-err').innerHTML = '<div class="error">'+e.message+'</div>';
+        return;
+      }
+      renderCustomerAction(container, updated, merchant, earned);
+    };
+    container.appendChild(box);
+  }
+  function drawClientsTab(){
+    tabBody.innerHTML = '';
+    if(customers.length===0){
+      tabBody.appendChild(el(`<div class="card"><div class="empty">Aucun client encore. Partagez votre QR.</div></div>`));
+      return;
+    }
+    const list = el(`<div class="card"></div>`);
+    customers.forEach(c=>{
+      list.appendChild(el(`
+        <div class="customer-row">
+          <span>${c.first_name} ${c.last_name||''}</span>
+          <span class="pill">${c.stamps}/${merchant.threshold}${c.rewards_earned?' · '+c.rewards_earned+' 🎁':''}</span>
+        </div>
+      `));
+    });
+    tabBody.appendChild(list);
+  }
+  function drawCampagneTab(){
+    tabBody.innerHTML = '';
+    tabBody.appendChild(el(`
+      <div class="card">
+        <p class="eyebrow">Message à envoyer à vos clients (email / WhatsApp)</p>
+        <div class="field">
+          <label>Objet / accroche</label>
+          <input id="camp-subject" placeholder="Ex. Il vous reste 2 achats avant votre cadeau !">
+        </div>
+        <div class="field">
+          <label>Message</label>
+          <textarea id="camp-body" rows="4" placeholder="Ex. On ne vous a pas vu depuis un moment — revenez cette semaine et rapprochez-vous de votre ${merchant.reward}."></textarea>
+        </div>
+        <button class="btn-block" id="save-camp">Enregistrer le brouillon</button>
+        <p class="muted" style="margin-top:10px;">L'envoi réel par email ou WhatsApp demande de connecter un compte (ex. WhatsApp Business, un service d'emailing). Ce brouillon reste prêt à l'envoi dès que c'est branché.</p>
+        <div id="camp-list"></div>
+      </div>
+    `));
+    (async () => {
+      const drafts = await dbGetCampaigns(code);
+      const listEl = tabBody.querySelector('#camp-list');
+      drafts.forEach(d => {
+        listEl.appendChild(el(`<div class="customer-row"><span>${d.subject}</span><span class="pill">brouillon</span></div>`));
+      });
+    })();
+    tabBody.querySelector('#save-camp').onclick = async () => {
+      const subject = tabBody.querySelector('#camp-subject').value.trim();
+      const body = tabBody.querySelector('#camp-body').value.trim();
+      if(!subject) return;
+      await dbCreateCampaign({merchant_code: code, subject, body});
+      drawCampagneTab();
+    };
+  }
+
+  wrap.querySelectorAll('.tab').forEach(t=>{
+    t.onclick = () => {
+      wrap.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      if(t.dataset.tab==='stamp') drawStampTab();
+      if(t.dataset.tab==='clients') drawClientsTab();
+      if(t.dataset.tab==='campagne') drawCampagneTab();
+    };
+  });
+  drawStampTab();
+
+  return wrap;
+}
+
+/* ---------- CUSTOMER: entry ---------- */
+function viewCustomerEntry(){
+  const wrap = el(`
+    <div>
+      <div class="backrow"><button id="back">←</button><h2>Rejoindre un programme</h2></div>
+      <div class="card">
+        <p class="eyebrow">Scannez le QR affiché chez le commerçant</p>
+        <button class="btn-scan btn-block" id="scan">📷 Scanner le QR code</button>
+        <div class="or-divider">— ou entrez le code —</div>
+        <div class="field">
+          <label>Code du commerce</label>
+          <input id="mcode" placeholder="Ex. K3P9QZ" maxlength="6" style="text-transform:uppercase">
+        </div>
+        <button class="btn-primary btn-block" id="find">Continuer</button>
+        <div id="err"></div>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Vous avez déjà une carte ?</p>
+        <div class="field">
+          <label>Votre code personnel (donné à l'inscription)</label>
+          <input id="mycode" placeholder="Ex. K3P9QZ-A7F2" style="text-transform:uppercase">
+        </div>
+        <button class="btn-block" id="find-card">Retrouver ma carte</button>
+        <div id="err2"></div>
+      </div>
+    </div>
+  `);
+  wrap.querySelector('#back').onclick = () => { state.view='home'; draw(); };
+  wrap.querySelector('#find-card').onclick = async () => {
+    const id = wrap.querySelector('#mycode').value.trim().toUpperCase();
+    const merchantCode = id.split('-')[0];
+    if(!id || !merchantCode){
+      wrap.querySelector('#err2').innerHTML = '<div class="error">Entrez votre code complet.</div>';
+      return;
+    }
+    let cust;
+    try{
+      cust = await dbGetCustomer(id, merchantCode);
+    }catch(e){
+      wrap.querySelector('#err2').innerHTML = '<div class="error">'+e.message+'</div>';
+      return;
+    }
+    if(!cust){
+      wrap.querySelector('#err2').innerHTML = '<div class="error">Carte introuvable. Vérifiez le code.</div>';
+      return;
+    }
+    await storeSet('my-customer:'+merchantCode, {id});
+    state.merchantCode = merchantCode;
+    state.customerId = id;
+    state.view = 'customer-card';
+    draw();
+  };
+
+  async function goToCode(code){
+    let m;
+    try{
+      m = await dbGetMerchant(code);
+    }catch(e){
+      wrap.querySelector('#err').innerHTML = '<div class="error">'+e.message+'</div>';
+      return;
+    }
+    if(!m){
+      wrap.querySelector('#err').innerHTML = '<div class="error">Aucun commerce avec ce code.</div>';
+      return;
+    }
+    state.merchantCode = code;
+    state.view = 'customer-join';
+    draw();
+  }
+
+  if(!scannerSupported()){
+    wrap.querySelector('#scan').style.display = 'none';
+    wrap.querySelector('.or-divider').style.display = 'none';
+  }
+  wrap.querySelector('#scan').onclick = () => {
+    openScanner((value, err) => {
+      if(err){
+        wrap.querySelector('#err').innerHTML = '<div class="error">'+err+' — entrez le code manuellement.</div>';
+        return;
+      }
+      let code;
+      try{
+        const u = new URL(value);
+        code = u.searchParams.get('join');
+      }catch(e){ /* not a URL */ }
+      if(!code){
+        const parts = value.split('|');
+        code = parts[parts.length-1];
+      }
+      goToCode(code.trim().toUpperCase());
+    });
+  };
+  wrap.querySelector('#find').onclick = () => {
+    const code = wrap.querySelector('#mcode').value.trim().toUpperCase();
+    if(code) goToCode(code);
+  };
+  return wrap;
+}
+
+/* ---------- CUSTOMER: join / register ---------- */
+async function viewCustomerJoin(){
+  const code = state.merchantCode;
+  const merchant = await dbGetMerchant(code);
+  if(!merchant){ state.view='customer-entry'; return viewCustomerEntry(); }
+
+  const existingId = await storeGet('my-customer:'+code);
+  if(existingId){
+    state.customerId = existingId.id;
+    state.view = 'customer-card';
+    return await viewCustomerCard();
+  }
+
+  const wrap = el(`
+    <div>
+      <div class="backrow"><button id="back">←</button><h2 style="color:${merchant.accent}">${merchant.name}</h2></div>
+      <div class="card">
+        <p class="eyebrow">Inscrivez-vous une fois, gardez votre carte à vie</p>
+        <div class="field"><label>Prénom</label><input id="fn"></div>
+        <div class="field"><label>Nom</label><input id="ln"></div>
+        <div class="field"><label>Email</label><input id="email" type="email"></div>
+        <div class="field"><label>Téléphone</label><input id="phone" type="tel"></div>
+        <div id="err"></div>
+        <button class="btn-primary btn-block" id="join">Créer ma carte</button>
+      </div>
+    </div>
+  `);
+  wrap.querySelector('#back').onclick = () => { state.view='customer-entry'; draw(); };
+  wrap.querySelector('#join').onclick = async () => {
+    const first_name = wrap.querySelector('#fn').value.trim();
+    const last_name = wrap.querySelector('#ln').value.trim();
+    const email = wrap.querySelector('#email').value.trim();
+    const phone = wrap.querySelector('#phone').value.trim();
+    if(!first_name || !phone){
+      wrap.querySelector('#err').innerHTML = '<div class="error">Prénom et téléphone sont nécessaires.</div>';
+      return;
+    }
+    const id = code + '-' + genCode(4);
+    try{
+      await dbCreateCustomer({id, merchant_code: code, first_name, last_name, email, phone, stamps:0, rewards_earned:0});
+    }catch(e){
+      wrap.querySelector('#err').innerHTML = '<div class="error">'+e.message+'</div>';
+      return;
+    }
+    await storeSet('my-customer:'+code, {id});
+    state.customerId = id;
+    state.view = 'customer-card';
+    draw();
+  };
+  return wrap;
+}
+
+/* ---------- CUSTOMER: card ---------- */
+async function viewCustomerCard(){
+  const code = state.merchantCode;
+  const merchant = await dbGetMerchant(code);
+  const cust = await dbGetCustomer(state.customerId, code);
+  if(!merchant || !cust){ state.view='customer-entry'; return viewCustomerEntry(); }
+
+  const wrap = el(`
+    <div>
+      <div class="backrow"><button id="back">←</button><h2 style="color:${merchant.accent}">${merchant.name}</h2></div>
+      <div class="card">
+        <p class="eyebrow">Votre carte</p>
+        <h3 style="margin:0 0 10px;">${cust.first_name} ${cust.last_name||''}</h3>
+        <div class="stamps">
+          ${Array.from({length: merchant.threshold}).map((_,i)=>`<div class="stamp ${i < cust.stamps ? 'filled':''}">${i<cust.stamps?'✓':''}</div>`).join('')}
+        </div>
+        <div class="muted">${cust.stamps} / ${merchant.threshold} achats — ${merchant.reward}</div>
+        ${cust.rewards_earned ? `<div class="banner" style="margin-top:12px;">🎁 ${cust.rewards_earned} récompense(s) obtenue(s)</div>` : ''}
+        <div class="qrbox">
+          <div id="qr"></div>
+          <div class="code">${cust.id}</div>
+          <div class="muted">Montrez ce code à chaque achat</div>
+        </div>
+      </div>
+    </div>
+  `);
+  wrap.querySelector('#back').onclick = () => { storeClear('last-session'); state.view='home'; state.merchantCode=null; state.customerId=null; draw(); };
+  renderQR(wrap.querySelector('#qr'), 'FIDELITE|CLIENT|'+cust.id);
+  return wrap;
+}
+
+/* ---------- ROUTER ---------- */
+async function draw(){
+  let node;
+  try{
+    if(state.view==='home') node = viewHome();
+    else if(state.view==='merchant-entry') node = viewMerchantEntry();
+    else if(state.view==='merchant-setup') node = viewMerchantSetup();
+    else if(state.view==='merchant-dashboard') node = await viewMerchantDashboard();
+    else if(state.view==='customer-entry') node = viewCustomerEntry();
+    else if(state.view==='customer-join') node = await viewCustomerJoin();
+    else if(state.view==='customer-card') node = await viewCustomerCard();
+    else node = viewHome();
+
+    if(state.view==='merchant-dashboard'){
+      await storeSet('last-session', {view:'merchant-dashboard', merchantCode: state.merchantCode});
+    } else if(state.view==='customer-card'){
+      await storeSet('last-session', {view:'customer-card', merchantCode: state.merchantCode, customerId: state.customerId});
+    }
+  }catch(e){
+    node = el(`
+      <div>
+        <div class="error">Un problème est survenu (${(e && e.message) || 'erreur inconnue'}).</div>
+        <button class="btn-block" id="reset">Retour à l'accueil</button>
+      </div>
+    `);
+    node.querySelector('#reset').onclick = () => { state.view='home'; state.merchantCode=null; state.customerId=null; draw(); };
+  }
+  render(node);
+}
+
+(async function init(){
+  try{
+    const params = new URLSearchParams(location.search);
+    const join = params.get('join');
+    if(join){
+      state.merchantCode = join.trim().toUpperCase();
+      state.view = 'customer-join';
+    } else {
+      const last = await storeGet('last-session');
+      if(last && (last.view==='merchant-dashboard' || last.view==='customer-card')){
+        state.view = last.view;
+        state.merchantCode = last.merchantCode || null;
+        state.customerId = last.customerId || null;
+      }
+    }
+  }catch(e){}
+  draw();
+})();
+</script>
+</body>
+</html>
