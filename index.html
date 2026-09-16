@@ -33,6 +33,47 @@
   h1,h2,h3,.display{font-family:'Fraunces',serif;}
   #app{max-width:480px;margin:0 auto;padding:24px 18px 60px;}
 
+  .brand-icon{
+    width:44px;height:44px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;flex-shrink:0;
+    background:var(--paper-2);border:1.5px solid var(--ink);
+  }
+  .brand-row{display:flex;align-items:center;gap:12px;}
+
+  /* Style themes chosen per-merchant */
+  body[data-style="moderne"]{ --radius:22px; }
+  body[data-style="moderne"] .card{ border:none; box-shadow:0 10px 30px rgba(0,0,0,0.10); }
+  body[data-style="moderne"] button{ border-radius:999px; }
+  body[data-style="moderne"] .brand-icon{ border:none; box-shadow:0 4px 14px rgba(0,0,0,0.12); }
+  body[data-style="moderne"] .stamp{ border-radius:50%; }
+  body[data-style="moderne"] h1,body[data-style="moderne"] h2,body[data-style="moderne"] h3{
+    font-family:'Inter',sans-serif;font-weight:700;letter-spacing:-0.02em;
+  }
+
+  body[data-style="minimal"]{ --radius:2px; }
+  body[data-style="minimal"] .card{ border:1px solid var(--line);box-shadow:none;border-radius:2px; }
+  body[data-style="minimal"] button{ border-radius:2px; }
+  body[data-style="minimal"] .brand-icon{ border-radius:2px; }
+  body[data-style="minimal"] .stamp{ border-radius:2px; }
+  body[data-style="minimal"] h1,body[data-style="minimal"] h2,body[data-style="minimal"] h3{
+    font-family:'Inter',sans-serif;font-weight:600;letter-spacing:0;
+  }
+
+  .style-options{display:flex;gap:10px;}
+  .style-opt{
+    flex:1;border:1.5px solid var(--line);border-radius:10px;padding:12px 8px;
+    text-align:center;cursor:pointer;font-size:0.82rem;color:var(--ink-soft);
+  }
+  .style-opt.selected{border-color:var(--ink);color:var(--ink);background:var(--paper-2);}
+  .style-opt .swatch-icon{font-size:1.3rem;display:block;margin-bottom:4px;}
+  .icon-options{display:flex;gap:8px;flex-wrap:wrap;}
+  .icon-opt{
+    width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:pointer;
+  }
+  .icon-opt.selected{border-color:var(--ink);border-width:2px;background:var(--paper-2);}
+
   .cover{
     text-align:left;
     padding-top:12px;
@@ -184,6 +225,12 @@ const CATEGORIES = [
   {id:'autre', label:'Autre commerce'},
 ];
 const ACCENTS = ['#C4432B','#2451B0','#2F6B4F','#6B3FA0','#B8860B','#1A1A1A'];
+const ICONS = ['⭐','☕','🍽️','✂️','🍰','🍕','💈','🛍️','🌿','🎨'];
+const STYLES = [
+  {id:'carnet', label:'Carnet', icon:'📖'},
+  {id:'moderne', label:'Moderne', icon:'✨'},
+  {id:'minimal', label:'Minimal', icon:'▫️'}
+];
 
 function genCode(len){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -400,6 +447,8 @@ function viewMerchantEntry(){
 /* ---------- MERCHANT: setup ---------- */
 function viewMerchantSetup(){
   let chosenAccent = ACCENTS[0];
+  let chosenIcon = ICONS[0];
+  let chosenStyle = STYLES[0].id;
   const wrap = el(`
     <div>
       <div class="backrow"><button id="back">←</button><h2>Créer mon programme</h2></div>
@@ -415,9 +464,21 @@ function viewMerchantSetup(){
           </select>
         </div>
         <div class="field">
+          <label>Icône de votre carte</label>
+          <div class="icon-options" id="icons">
+            ${ICONS.map((ic,i)=>`<div class="icon-opt ${i===0?'selected':''}" data-i="${ic}">${ic}</div>`).join('')}
+          </div>
+        </div>
+        <div class="field">
           <label>Couleur de votre carte</label>
           <div class="swatches" id="swatches">
             ${ACCENTS.map((c,i)=>`<div class="swatch ${i===0?'selected':''}" data-c="${c}" style="background:${c}"></div>`).join('')}
+          </div>
+        </div>
+        <div class="field">
+          <label>Style de votre carte</label>
+          <div class="style-options" id="styles">
+            ${STYLES.map((s,i)=>`<div class="style-opt ${i===0?'selected':''}" data-s="${s.id}"><span class="swatch-icon">${s.icon}</span>${s.label}</div>`).join('')}
           </div>
         </div>
         <div class="field">
@@ -441,6 +502,20 @@ function viewMerchantSetup(){
       chosenAccent = s.dataset.c;
     };
   });
+  wrap.querySelectorAll('.icon-opt').forEach(s=>{
+    s.onclick = () => {
+      wrap.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('selected'));
+      s.classList.add('selected');
+      chosenIcon = s.dataset.i;
+    };
+  });
+  wrap.querySelectorAll('.style-opt').forEach(s=>{
+    s.onclick = () => {
+      wrap.querySelectorAll('.style-opt').forEach(x=>x.classList.remove('selected'));
+      s.classList.add('selected');
+      chosenStyle = s.dataset.s;
+    };
+  });
   wrap.querySelector('#create').onclick = async () => {
     const name = wrap.querySelector('#name').value.trim();
     const category = wrap.querySelector('#category').value;
@@ -452,7 +527,7 @@ function viewMerchantSetup(){
     }
     const code = genCode(6);
     try{
-      await dbCreateMerchant({code, name, category, accent: chosenAccent, threshold, reward});
+      await dbCreateMerchant({code, name, category, accent: chosenAccent, icon: chosenIcon, style: chosenStyle, threshold, reward});
     }catch(e){
       wrap.querySelector('#err').innerHTML = '<div class="error">'+e.message+'</div>';
       return;
@@ -471,10 +546,16 @@ async function viewMerchantDashboard(){
   const merchant = await dbGetMerchant(code);
   if(!merchant){ state.view='merchant-entry'; return viewMerchantEntry(); }
   const customers = await dbGetCustomers(code);
+  document.body.setAttribute('data-style', merchant.style || 'carnet');
 
   const wrap = el(`
     <div>
-      <div class="backrow"><button id="back">←</button><h2 style="color:${merchant.accent}">${merchant.name}</h2></div>
+      <div class="backrow"><button id="back">←</button>
+        <div class="brand-row">
+          <div class="brand-icon">${merchant.icon || '⭐'}</div>
+          <h2 style="color:${merchant.accent}">${merchant.name}</h2>
+        </div>
+      </div>
 
       <div class="card">
         <p class="eyebrow">Vos clients scannent ce QR pour rejoindre votre programme</p>
@@ -494,7 +575,7 @@ async function viewMerchantDashboard(){
     </div>
   `);
 
-  wrap.querySelector('#back').onclick = () => { storeClear('last-session'); state.view='home'; state.merchantCode=null; draw(); };
+  wrap.querySelector('#back').onclick = () => { storeClear('last-session'); document.body.removeAttribute('data-style'); state.view='home'; state.merchantCode=null; draw(); };
 
   const joinUrl = location.origin && location.origin !== 'null'
     ? location.origin + location.pathname + '?join=' + merchant.code
@@ -856,10 +937,16 @@ async function viewCustomerCard(){
   const merchant = await dbGetMerchant(code);
   const cust = await dbGetCustomer(state.customerId, code);
   if(!merchant || !cust){ state.view='customer-entry'; return viewCustomerEntry(); }
+  document.body.setAttribute('data-style', merchant.style || 'carnet');
 
   const wrap = el(`
     <div>
-      <div class="backrow"><button id="back">←</button><h2 style="color:${merchant.accent}">${merchant.name}</h2></div>
+      <div class="backrow"><button id="back">←</button>
+        <div class="brand-row">
+          <div class="brand-icon">${merchant.icon || '⭐'}</div>
+          <h2 style="color:${merchant.accent}">${merchant.name}</h2>
+        </div>
+      </div>
       <div class="card">
         <p class="eyebrow">Votre carte</p>
         <h3 style="margin:0 0 10px;">${cust.first_name} ${cust.last_name||''}</h3>
@@ -876,7 +963,7 @@ async function viewCustomerCard(){
       </div>
     </div>
   `);
-  wrap.querySelector('#back').onclick = () => { storeClear('last-session'); state.view='home'; state.merchantCode=null; state.customerId=null; draw(); };
+  wrap.querySelector('#back').onclick = () => { storeClear('last-session'); document.body.removeAttribute('data-style'); state.view='home'; state.merchantCode=null; state.customerId=null; draw(); };
   renderQR(wrap.querySelector('#qr'), 'FIDELITE|CLIENT|'+cust.id);
   return wrap;
 }
