@@ -526,6 +526,37 @@ async function viewMerchantDashboard(){
       }
       renderCustomerAction(result, cust, merchant);
     }
+    async function scanAndStamp(cid){
+      const result = tabBody.querySelector('#result');
+      result.innerHTML = '<div class="empty">Enregistrement en cours…</div>';
+      let cust;
+      try{
+        cust = await dbGetCustomer(cid, code);
+      }catch(e){
+        result.innerHTML = '<div class="error">'+e.message+'</div>';
+        return;
+      }
+      if(!cust){
+        result.innerHTML = '<div class="error">Client introuvable. Vérifiez le code.</div>';
+        return;
+      }
+      let stamps = cust.stamps + 1;
+      let rewards_earned = cust.rewards_earned || 0;
+      let earned = false;
+      if(stamps >= merchant.threshold){
+        stamps = 0;
+        rewards_earned += 1;
+        earned = true;
+      }
+      let updated;
+      try{
+        updated = await dbUpdateCustomer(cust.id, {stamps, rewards_earned});
+      }catch(e){
+        result.innerHTML = '<div class="error">'+e.message+'</div>';
+        return;
+      }
+      renderStampResult(result, updated, merchant, earned);
+    }
     if(!scannerSupported()){
       tabBody.querySelector('#scan-client').style.display = 'none';
       tabBody.querySelector('.or-divider').style.display = 'none';
@@ -539,13 +570,29 @@ async function viewMerchantDashboard(){
         }
         const parts = value.split('|');
         const cid = (parts[parts.length-1] || value).trim().toUpperCase();
-        lookup(cid);
+        scanAndStamp(cid);
       });
     };
     tabBody.querySelector('#search-btn').onclick = () => {
       const cid = tabBody.querySelector('#search-code').value.trim().toUpperCase();
       if(cid) lookup(cid);
     };
+  }
+  function renderStampResult(container, cust, merchant, justEarned){
+    container.innerHTML = '';
+    const box = el(`
+      <div class="card" style="margin-top:12px;">
+        ${justEarned ? `<div class="banner">🎁 Récompense débloquée : ${merchant.reward}</div>` : `<div class="banner">✓ Achat ajouté</div>`}
+        <p class="eyebrow">${cust.first_name} ${cust.last_name||''}</p>
+        <div class="stamps">
+          ${Array.from({length: merchant.threshold}).map((_,i)=>`<div class="stamp ${i < cust.stamps ? 'filled':''}">${i<cust.stamps?'✓':''}</div>`).join('')}
+        </div>
+        <div class="muted">${cust.stamps} / ${merchant.threshold} achats</div>
+        <button class="btn-scan btn-block" id="scan-next" style="margin-top:12px;">📷 Client suivant</button>
+      </div>
+    `);
+    box.querySelector('#scan-next').onclick = () => { tabBody.querySelector('#scan-client').click(); };
+    container.appendChild(box);
   }
   function renderCustomerAction(container, cust, merchant, justEarned){
     container.innerHTML = '';
