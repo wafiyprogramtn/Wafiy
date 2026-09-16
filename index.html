@@ -6,6 +6,7 @@
 <title>Carnet — programme de fidélité</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
 <style>
   :root{
     --paper:#F6F1E7;
@@ -276,7 +277,7 @@ function renderQR(container, value){
 }
 
 function scannerSupported(){
-  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && 'BarcodeDetector' in window);
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 }
 
 async function openScanner(onDetected){
@@ -304,18 +305,23 @@ async function openScanner(onDetected){
     stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
     video.srcObject = stream;
     await video.play();
-    const detector = new BarcodeDetector({formats:['qr_code']});
-    timer = setInterval(async () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', {willReadFrequently:true});
+    timer = setInterval(() => {
       if(stopped) return;
+      if(!video.videoWidth || video.readyState < 2) return;
       try{
-        const codes = await detector.detect(video);
-        if(codes && codes.length){
-          const value = codes[0].rawValue;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = (typeof jsQR === 'function') ? jsQR(imageData.data, imageData.width, imageData.height) : null;
+        if(code && code.data){
           cleanup();
-          onDetected(value);
+          onDetected(code.data);
         }
       }catch(e){ /* keep trying */ }
-    }, 300);
+    }, 250);
   }catch(e){
     cleanup();
     onDetected(null, 'Caméra indisponible : ' + ((e && e.message) || 'accès refusé'));
