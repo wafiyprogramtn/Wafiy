@@ -68,6 +68,22 @@
   .style-opt.selected{border-color:var(--ink);color:var(--ink);background:var(--paper-2);}
   .style-opt .swatch-icon{font-size:1.3rem;display:block;margin-bottom:4px;}
   .icon-options{display:flex;gap:8px;flex-wrap:wrap;}
+  .templates{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .tpl{
+    border:1.5px solid var(--line);border-radius:12px;padding:14px 10px;
+    text-align:center;cursor:pointer;
+  }
+  .tpl.selected{border-color:var(--ink);border-width:2px;background:var(--paper-2);}
+  .tpl .tpl-icon{
+    width:40px;height:40px;border-radius:50%;margin:0 auto 8px;
+    display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;
+  }
+  .tpl .tpl-name{font-size:0.82rem;font-weight:600;}
+  .tpl .tpl-style{font-size:0.72rem;color:var(--ink-soft);margin-top:2px;}
+  .customize-toggle{
+    background:none;border:none;color:var(--ink-soft);font-size:0.85rem;
+    text-decoration:underline;padding:6px 0;cursor:pointer;text-align:left;
+  }
   .icon-opt{
     width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);
     display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:pointer;
@@ -230,6 +246,16 @@ const STYLES = [
   {id:'carnet', label:'Carnet', icon:'📖'},
   {id:'moderne', label:'Moderne', icon:'✨'},
   {id:'minimal', label:'Minimal', icon:'▫️'}
+];
+const TEMPLATES = [
+  {name:'Café chaleureux', icon:'☕', accent:'#C4432B', style:'carnet'},
+  {name:'Café moderne', icon:'☕', accent:'#2451B0', style:'moderne'},
+  {name:'Restaurant élégant', icon:'🍽️', accent:'#1A1A1A', style:'minimal'},
+  {name:'Fast-food énergique', icon:'🍕', accent:'#C4432B', style:'moderne'},
+  {name:'Salon glamour', icon:'✂️', accent:'#6B3FA0', style:'moderne'},
+  {name:'Salon nature', icon:'🌿', accent:'#2F6B4F', style:'carnet'},
+  {name:'Boutique dorée', icon:'🛍️', accent:'#B8860B', style:'minimal'},
+  {name:'Pâtisserie douce', icon:'🍰', accent:'#C4432B', style:'moderne'},
 ];
 
 function genCode(len){
@@ -446,9 +472,9 @@ function viewMerchantEntry(){
 
 /* ---------- MERCHANT: setup ---------- */
 function viewMerchantSetup(){
-  let chosenAccent = ACCENTS[0];
-  let chosenIcon = ICONS[0];
-  let chosenStyle = STYLES[0].id;
+  let chosenAccent = TEMPLATES[0].accent;
+  let chosenIcon = TEMPLATES[0].icon;
+  let chosenStyle = TEMPLATES[0].style;
   const wrap = el(`
     <div>
       <div class="backrow"><button id="back">←</button><h2>Créer mon programme</h2></div>
@@ -464,21 +490,36 @@ function viewMerchantSetup(){
           </select>
         </div>
         <div class="field">
-          <label>Icône de votre carte</label>
-          <div class="icon-options" id="icons">
-            ${ICONS.map((ic,i)=>`<div class="icon-opt ${i===0?'selected':''}" data-i="${ic}">${ic}</div>`).join('')}
+          <label>Choisissez un style</label>
+          <div class="templates" id="templates">
+            ${TEMPLATES.map((t,i)=>`
+              <div class="tpl ${i===0?'selected':''}" data-i="${i}">
+                <div class="tpl-icon" style="background:${t.accent}">${t.icon}</div>
+                <div class="tpl-name">${t.name}</div>
+                <div class="tpl-style">${STYLES.find(s=>s.id===t.style).label}</div>
+              </div>
+            `).join('')}
           </div>
         </div>
-        <div class="field">
-          <label>Couleur de votre carte</label>
-          <div class="swatches" id="swatches">
-            ${ACCENTS.map((c,i)=>`<div class="swatch ${i===0?'selected':''}" data-c="${c}" style="background:${c}"></div>`).join('')}
+        <button type="button" class="customize-toggle" id="customize-toggle">Personnaliser (icône, couleur, style) ›</button>
+        <div id="customize" style="display:none;">
+          <div class="field">
+            <label>Icône de votre carte</label>
+            <div class="icon-options" id="icons">
+              ${ICONS.map(ic=>`<div class="icon-opt ${ic===chosenIcon?'selected':''}" data-i="${ic}">${ic}</div>`).join('')}
+            </div>
           </div>
-        </div>
-        <div class="field">
-          <label>Style de votre carte</label>
-          <div class="style-options" id="styles">
-            ${STYLES.map((s,i)=>`<div class="style-opt ${i===0?'selected':''}" data-s="${s.id}"><span class="swatch-icon">${s.icon}</span>${s.label}</div>`).join('')}
+          <div class="field">
+            <label>Couleur de votre carte</label>
+            <div class="swatches" id="swatches">
+              ${ACCENTS.map(c=>`<div class="swatch ${c===chosenAccent?'selected':''}" data-c="${c}" style="background:${c}"></div>`).join('')}
+            </div>
+          </div>
+          <div class="field">
+            <label>Style de votre carte</label>
+            <div class="style-options" id="styles">
+              ${STYLES.map(s=>`<div class="style-opt ${s.id===chosenStyle?'selected':''}" data-s="${s.id}"><span class="swatch-icon">${s.icon}</span>${s.label}</div>`).join('')}
+            </div>
           </div>
         </div>
         <div class="field">
@@ -495,11 +536,34 @@ function viewMerchantSetup(){
     </div>
   `);
   wrap.querySelector('#back').onclick = () => { state.view='merchant-entry'; draw(); };
+
+  function syncCustomizeUI(){
+    wrap.querySelectorAll('.icon-opt').forEach(x=>x.classList.toggle('selected', x.dataset.i===chosenIcon));
+    wrap.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('selected', x.dataset.c===chosenAccent));
+    wrap.querySelectorAll('.style-opt').forEach(x=>x.classList.toggle('selected', x.dataset.s===chosenStyle));
+  }
+
+  wrap.querySelectorAll('.tpl').forEach(t=>{
+    t.onclick = () => {
+      wrap.querySelectorAll('.tpl').forEach(x=>x.classList.remove('selected'));
+      t.classList.add('selected');
+      const tpl = TEMPLATES[parseInt(t.dataset.i)];
+      chosenAccent = tpl.accent;
+      chosenIcon = tpl.icon;
+      chosenStyle = tpl.style;
+      syncCustomizeUI();
+    };
+  });
+  wrap.querySelector('#customize-toggle').onclick = () => {
+    const box = wrap.querySelector('#customize');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  };
   wrap.querySelectorAll('.swatch').forEach(s=>{
     s.onclick = () => {
       wrap.querySelectorAll('.swatch').forEach(x=>x.classList.remove('selected'));
       s.classList.add('selected');
       chosenAccent = s.dataset.c;
+      wrap.querySelectorAll('.tpl').forEach(x=>x.classList.remove('selected'));
     };
   });
   wrap.querySelectorAll('.icon-opt').forEach(s=>{
@@ -507,6 +571,7 @@ function viewMerchantSetup(){
       wrap.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('selected'));
       s.classList.add('selected');
       chosenIcon = s.dataset.i;
+      wrap.querySelectorAll('.tpl').forEach(x=>x.classList.remove('selected'));
     };
   });
   wrap.querySelectorAll('.style-opt').forEach(s=>{
@@ -514,6 +579,7 @@ function viewMerchantSetup(){
       wrap.querySelectorAll('.style-opt').forEach(x=>x.classList.remove('selected'));
       s.classList.add('selected');
       chosenStyle = s.dataset.s;
+      wrap.querySelectorAll('.tpl').forEach(x=>x.classList.remove('selected'));
     };
   });
   wrap.querySelector('#create').onclick = async () => {
