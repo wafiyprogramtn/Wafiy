@@ -6,7 +6,7 @@
 <title>Carnet — programme de fidélité</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
   :root{
     --paper:#F6F1E7;
@@ -378,6 +378,11 @@ async function openScanner(onDetected){
     stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
     video.srcObject = stream;
     await video.play();
+    if(typeof jsQR !== 'function'){
+      cleanup();
+      onDetected(null, 'Le lecteur de QR n\'a pas pu se charger (vérifiez votre connexion internet).');
+      return;
+    }
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d', {willReadFrequently:true});
     timer = setInterval(() => {
@@ -388,7 +393,7 @@ async function openScanner(onDetected){
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = (typeof jsQR === 'function') ? jsQR(imageData.data, imageData.width, imageData.height) : null;
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
         if(code && code.data){
           cleanup();
           onDetected(code.data);
