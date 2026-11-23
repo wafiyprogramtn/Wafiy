@@ -6,23 +6,30 @@
 <meta name="theme-color" content="#07070d">
 <meta name="description" content="El Mecano Garage — diagnostic précis, réparation fiable et reprogrammation ECU à Mnihla, Tunis. 4,9/5 sur 178 avis Google.">
 <title data-i18n="meta.title">El Mecano Garage — Diagnostic & réparation automobile à Tunis</title>
-<link rel="icon" type="image/png" href="%FAVICON%">
-<style>%CSS%</style>
+<meta property="og:type" content="website">
+<meta property="og:title" content="El Mecano Garage — Diagnostic, réparation & formations auto">
+<meta property="og:description" content="Diagnostic précis, réparation fiable, reprogrammation ECU et formations professionnelles à Mnihla, Tunis. 4,9/5 sur 178 avis Google.">
+<meta property="og:image" content="assets/og.jpg">
+<link rel="icon" type="image/png" href="assets/favicon-64.png">
+<link rel="preload" href="assets/frames/k0.jpg" as="image">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
 
 <div id="loader" aria-hidden="true">
-  <img src="%LOGO%" alt="">
+  <img src="assets/logo.png" alt="">
   <div class="loader-bar"><i></i></div>
   <span data-i18n="loading">Chargement…</span>
 </div>
 
 <!-- ============ NAV ============ -->
 <header class="nav" id="nav">
-  <a class="nav-logo" href="#top" aria-label="El Mecano Garage"><img src="%LOGO%" alt="El Mecano Garage"></a>
+  <a class="nav-logo" href="#top" aria-label="El Mecano Garage"><img src="assets/logo.png" alt="El Mecano Garage"></a>
   <nav class="nav-links">
     <a href="#services" data-i18n="nav.services">Services</a>
     <a href="#story" data-i18n="nav.diag">Diagnostic</a>
+    <a href="#formations" data-i18n="nav.courses">Formations</a>
     <a href="#avis" data-i18n="nav.reviews">Avis</a>
     <a href="#horaires" data-i18n="nav.hours">Horaires</a>
   </nav>
@@ -30,7 +37,7 @@
     <div class="lang" role="group" aria-label="Langue">
       <button data-lang="fr" class="on">FR</button><button data-lang="ar">عربي</button>
     </div>
-    <a class="btn btn-red btn-sm js-wa" href="#" target="_blank" rel="noopener" data-i18n="nav.cta">Prendre RDV</a>
+    <button class="btn btn-red btn-sm js-signup" type="button" data-i18n="nav.signup">S’inscrire</button>
   </div>
 </header>
 
@@ -40,7 +47,14 @@
 <section id="story" class="story">
   <div class="stage" id="stage">
     <div class="stage-bg"></div>
-    <canvas id="gl" aria-hidden="true"></canvas>
+    <div class="frames" id="frames" aria-hidden="true">
+      <img class="fr" data-k="0" src="assets/frames/k0.jpg" alt="" fetchpriority="high">
+      <img class="fr" data-k="1" src="assets/frames/k1.jpg" alt="">
+      <img class="fr" data-k="2" src="assets/frames/k2.jpg" alt="">
+      <img class="fr" data-k="3" src="assets/frames/k3.jpg" alt="">
+      <img class="fr" data-k="4" src="assets/frames/k4.jpg" alt="">
+      <i class="scanbar" id="scanbar"></i>
+    </div>
     <div class="scanline-label" id="scanLabel"><i></i><span data-i18n="scan.label">Analyse en cours</span> <b id="scanPct">0%</b></div>
     <div class="labels" id="labels"></div>
 
@@ -51,7 +65,7 @@
       <p class="lead" data-i18n="hero.text">Votre garage allie expertise et passion pour offrir des réparations précises, un entretien soigné et un suivi personnalisé de votre véhicule.</p>
       <div class="btns">
         <a class="btn btn-red js-wa" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z"/><path d="M8.5 8.5c.3 2.6 2.4 5.2 5 6l1.4-1.3 2 1c-.3 1-1.3 1.8-2.4 1.6-3.6-.6-6.5-3.6-7-7.1-.2-1.1.6-2.1 1.6-2.4l1 2Z"/></svg><span data-i18n="hero.cta1">Prendre rendez-vous</span></a>
-        <a class="btn btn-ghost" href="#s1" id="discover" data-i18n="hero.cta2">Découvrir</a>
+        <a class="btn btn-ghost" href="#formations" data-i18n="hero.cta2">Nos formations</a>
       </div>
       <p class="rating"><span class="stars">★★★★★</span> <span data-i18n="hero.rating"><b>4,9</b> · 178 avis Google</span></p>
     </div>
@@ -94,7 +108,7 @@
     <!-- report card -->
     <div class="card-float report" data-panel="report">
       <div class="cf-head">
-        <img src="%LOGO%" alt="">
+        <img src="assets/logo.png" alt="">
         <div><b data-i18n="rep.title">Rapport d’inspection</b><small data-i18n="rep.sub">Diagnostic d’achat · 48 points</small></div>
       </div>
       <ul class="rep-list">
@@ -143,13 +157,33 @@
   </div>
 </section>
 
+<!-- ============ FORMATIONS ============ -->
+<section class="section courses" id="formations">
+  <div class="wrap">
+    <div class="courses-head">
+      <div>
+        <p class="kicker reveal" data-i18n="courses.kicker">El Mecano Academy</p>
+        <h2 class="title reveal" data-i18n="courses.title">Formez-vous avec <em>des experts.</em></h2>
+        <p class="lead reveal" data-i18n="courses.lead"></p>
+      </div>
+      <p class="guarantee reveal"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3Z"/><path d="M8.5 12l2.4 2.4 4.6-4.8"/></svg><span id="guaranteeText"></span></p>
+    </div>
+    <div class="course-grid" id="courseGrid"></div>
+    <div class="consult reveal">
+      <div class="consult-ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5Z"/><path d="M8 9.5h8M8 12.5h5"/></svg></div>
+      <div class="consult-text"><h3 data-i18n="consult.title">Besoin d’un avis d’expert ?</h3><p data-i18n="consult.text"></p></div>
+      <button class="btn btn-ghost js-signup" data-type="consult" type="button" data-i18n="consult.btn">Réserver une consultation</button>
+    </div>
+  </div>
+</section>
+
 <!-- ============ WHY ============ -->
 <section class="section why" id="pourquoi">
   <div class="wrap why-grid">
     <div>
       <p class="kicker reveal" data-i18n="why.kicker">Expert en diagnostic auto</p>
       <h2 class="title reveal" data-i18n="why.title">Pourquoi <em>El Mecano</em> ?</h2>
-      <img class="why-logo reveal" src="%LOGO%" alt="El Mecano Garage">
+      <img class="why-logo reveal" src="assets/logo.png" alt="El Mecano Garage">
     </div>
     <div class="why-list">
       <div class="why-item reveal"><span class="why-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></span><div><h3 data-i18n="why1.t">Réparations précises</h3><p data-i18n="why1.d"></p></div></div>
@@ -230,21 +264,36 @@
 
 <footer class="footer">
   <div class="wrap footer-inner">
-    <img src="%LOGO%" alt="El Mecano Garage">
+    <img src="assets/logo.png" alt="El Mecano Garage">
     <div class="footer-text">
       <p data-i18n="footer.rights">© 2026 El Mecano Garage. Tous droits réservés.</p>
-      <p class="muted" data-i18n="footer.concept">Concept de site proposé à El Mecano Garage.</p>
-      <p class="muted tiny" dir="ltr">Modèle 3D « Car Concept » © 2024 Darmstadt Graphics Group GmbH — Eric Chadwick, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (logos modifiés).</p>
+      <p class="muted"><a href="mailto:cs-elmecano@outlook.com">cs-elmecano@outlook.com</a> · <a href="tel:+21652351490" dir="ltr">+216 52 351 490</a></p>
+      <p class="muted tiny" id="credit" hidden></p>
+    </div>
+    <div class="socials">
+      <a href="https://www.facebook.com/ellmecano" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v2H7v4h3v7h4v-7h3l1-4h-4V8.5c0-.3.2-.5.5-.5Z"/></svg></a>
+      <a href="https://www.instagram.com/ellmecano/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/></svg></a>
+      <a href="https://www.tiktok.com/@ellmecano" target="_blank" rel="noopener" aria-label="TikTok"><svg viewBox="0 0 24 24"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c.5 2.6 2.4 4.4 5 4.6"/></svg></a>
+      <a href="https://www.youtube.com/@Elmecano" target="_blank" rel="noopener" aria-label="YouTube"><svg viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.5 9.5v5l4-2.5-4-2.5Z"/></svg></a>
     </div>
   </div>
 </footer>
 
 <div class="mobile-bar">
   <a href="tel:+21652351490" class="btn btn-ghost"><svg viewBox="0 0 24 24"><path d="M5 3.5h3.2l1.6 4-2.1 1.4a11 11 0 0 0 7.4 7.4l1.4-2.1 4 1.6V19a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3 5.5a2 2 0 0 1 2-2Z"/></svg><span data-i18n="btn.call">Appeler</span></a>
-  <a href="#" class="btn btn-red js-wa" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z"/></svg><span data-i18n="btn.wa">WhatsApp</span></a>
+  <a href="#" class="btn btn-ghost js-wa" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z"/></svg><span data-i18n="btn.wa">WhatsApp</span></a>
+  <button class="btn btn-red js-signup" type="button"><span data-i18n="mbar.signup">S’inscrire</span></button>
 </div>
 
-<script type="application/octet-stream" id="car-data">%CARDATA%</script>
-<script>%JS%</script>
+<!-- ============ MODAL (course details + sign-up form) ============ -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-x" type="button" data-close aria-label="Fermer">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="assets/site.js" defer></script>
 </body>
 </html>

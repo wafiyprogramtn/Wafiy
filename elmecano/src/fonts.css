@@ -1,0 +1,11 @@
+/* ---------- fonts (inlined at build) ---------- */
+@font-face{font-family:Montserrat;font-weight:600;font-display:swap;src:url(fonts/montserrat-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:Montserrat;font-weight:700;font-display:swap;src:url(fonts/montserrat-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:Montserrat;font-weight:800;font-display:swap;src:url(fonts/montserrat-latin-800-normal.woff2) format("woff2")}
+@font-face{font-family:Lato;font-weight:400;font-display:swap;src:url(fonts/lato-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Lato;font-weight:700;font-display:swap;src:url(fonts/lato-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:Cairo;font-weight:400;font-display:swap;src:url(fonts/cairo-arabic-400-normal.woff2) format("woff2")}
+@font-face{font-family:Cairo;font-weight:600;font-display:swap;src:url(fonts/cairo-arabic-600-normal.woff2) format("woff2")}
+@font-face{font-family:Cairo;font-weight:700;font-display:swap;src:url(fonts/cairo-arabic-700-normal.woff2) format("woff2")}
+@font-face{font-family:Cairo;font-weight:800;font-display:swap;src:url(fonts/cairo-arabic-800-normal.woff2) format("woff2")}
+

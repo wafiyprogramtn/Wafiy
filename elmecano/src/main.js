@@ -1,31 +1,32 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { I18N } from './i18n.js';
+import { EXTRA } from './i18n-extra.js';
+import { COURSES, CONSULT, CITIES, GUARANTEE } from './courses.js';
 
 /* ------------------------------------------------------------------ *
- *  El Mecano — scroll-driven 3D story
- *  The page scroll inside #story (p: 0 → 1) drives camera, parts,
- *  x-ray scanner, labels and overlay cards. ?record = deterministic.
+ *  El Mecano — scroll-driven image story + academy + sign-up popup
+ *  Scrolling through #story (p: 0 → 1) drives the keyframe images,
+ *  the scanner wipe, labels and overlay cards. ?record = frame-exact.
  * ------------------------------------------------------------------ */
 
 const RECORD = /[?&]record\b/.test(location.search);
 const PHONE = '21652351490';
+const API = '/api/demandes';
+Object.keys(EXTRA).forEach(l => Object.assign(I18N[l], EXTRA[l]));
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const ramp = (p, a, b) => clamp((p - a) / (b - a));
 const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const smooth = t => t * t * (3 - 2 * t);
 const lerp = (a, b, t) => a + (b - a) * t;
-const D2R = Math.PI / 180;
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-/* ============================ i18n ============================ */
 let lang = 'fr';
-let needsLayout = true;
+const T = k => I18N[lang][k] ?? I18N.fr[k] ?? k;
+const L = o => (o ? o[lang] ?? o.fr : '');
 
+/* ============================ content ============================ */
 const REVIEWS = [
   { n: 'Hela Ben Bakir', d: { fr: 'Août 2026', ar: 'أوت 2026' }, t: 'Je voulais vraiment vous remercier pour vos précieux conseils et pour le temps que vous m’avez accordé. Votre disponibilité, votre réactivité et surtout votre expertise m’ont beaucoup aidée à faire le bon choix. C’est rassurant de pouvoir compter sur quelqu’un de compétent et de confiance.' },
   { n: 'Mohamed Haykel Ayadi', d: { fr: 'Août 2026', ar: 'أوت 2026' }, t: 'Excellente adresse ! Il a pris le temps de m’écouter pendant une vingtaine de minutes, de répondre à toutes mes questions et de me conseiller, sans rien demander en retour ! Professionnel, honnête et très serviable. Je recommande sans hésitation.' },
@@ -35,11 +36,42 @@ const REVIEWS = [
   { n: 'Ben Chhida Azmy', d: { fr: 'Juin 2026', ar: 'جوان 2026' }, t: 'Expérience 10/10.' },
 ];
 
+const ICONS = {
+  pack: '<path d="M2.5 9 12 4.5 21.5 9 12 13.5 2.5 9Z"/><path d="M6.5 11v4.5c0 1.6 2.5 3 5.5 3s5.5-1.4 5.5-3V11"/><path d="M21.5 9v5"/>',
+  diag: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M6.5 11h2.2l1.3-2.6 2 5.2 1.4-2.6h4.1"/><path d="M9 20h6M12 17v3"/>',
+  ecu: '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 2.5v3.5M15 2.5v3.5M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>',
+  hybrid: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M19 10.5h2v3h-2"/><path d="M11.5 8.8 8.8 12.4h3.4l-2.7 3.6"/>',
+};
+const icon = k => `<svg viewBox="0 0 24 24">${ICONS[k] || ''}</svg>`;
+
+function renderCourses() {
+  const fmt = n => n.toLocaleString(lang === 'ar' ? 'ar-TN' : 'fr-FR').replace(/ | /g, ' ');
+  $('#courseGrid').innerHTML = COURSES.map(c => `
+    <article class="course${c.featured ? ' featured' : ''} reveal" data-course="${c.id}">
+      <div class="course-top">
+        <span class="course-ic">${icon(c.icon)}</span>
+        <span class="course-badge">${esc(L(c.badge))}</span>
+      </div>
+      <h3>${esc(L(c.title))}</h3>
+      <p class="course-tag">${esc(L(c.tagline))}</p>
+      <div class="course-chips">${c.chips.map(x => `<span>${esc(L(x))}</span>`).join('')}</div>
+      <ul class="course-list">${c.bullets.map(b => `<li>${esc(L(b))}</li>`).join('')}</ul>
+      <div class="course-foot">
+        <div class="price">${c.oldPrice ? `<s>${fmt(c.oldPrice)} ${T('courses.currency')}</s>` : ''}<b>${fmt(c.price)}</b><span>${T('courses.currency')}</span></div>
+        <div class="course-btns">
+          <button class="btn btn-ghost btn-sm" data-program="${c.id}" type="button">${T('courses.program')}</button>
+          <button class="btn btn-red btn-sm js-signup" data-type="${c.id}" type="button">${T('courses.signup')}</button>
+        </div>
+      </div>
+    </article>`).join('');
+  $('#guaranteeText').textContent = L(GUARANTEE);
+}
+
 function renderReviews() {
   const track = $('#reviewsTrack');
   const card = r => {
     const ini = r.n.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    return `<article class="rev"><div class="rev-top"><div class="rev-who"><span class="rev-av">${ini}</span><div><b>${r.n}</b><small>${r.d[lang]}</small></div></div><span class="stars">★★★★★</span></div><p dir="auto">${r.t}</p></article>`;
+    return `<article class="rev"><div class="rev-top"><div class="rev-who"><span class="rev-av">${ini}</span><div><b>${esc(r.n)}</b><small>${r.d[lang]}</small></div></div><span class="stars">★★★★★</span></div><p dir="auto">${esc(r.t)}</p></article>`;
   };
   const html = REVIEWS.map(card).join('');
   track.innerHTML = html + html;
@@ -48,7 +80,6 @@ function renderReviews() {
 
 function updateOpen() {
   const badge = $('#openBadge');
-  if (!badge) return;
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Tunis', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
   const get = t => parts.find(x => x.type === t)?.value;
   const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday'));
@@ -56,7 +87,7 @@ function updateOpen() {
   const slots = day === 0 ? [] : day === 6 ? [[510, 720]] : [[540, 720], [780, 900]];
   const open = slots.some(([a, b]) => m >= a && m < b);
   badge.className = 'open-badge ' + (open ? 'is-open' : 'is-shut');
-  badge.querySelector('span').textContent = I18N[lang][open ? 'hours.open' : 'hours.shut'];
+  badge.querySelector('span').textContent = T(open ? 'hours.open' : 'hours.shut');
   $$('.hours li').forEach(li => {
     const d = li.dataset.day;
     li.classList.toggle('today', d === String(day) || (d === '1-5' && day >= 1 && day <= 5));
@@ -65,419 +96,95 @@ function updateOpen() {
 
 function applyLang(l) {
   lang = l;
-  const dict = I18N[l];
   document.documentElement.lang = l;
   document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
   $$('[data-i18n]').forEach(el => {
-    const v = dict[el.dataset.i18n];
+    const v = I18N[l][el.dataset.i18n];
     if (v != null) el.innerHTML = v;
   });
-  document.title = dict['meta.title'];
+  document.title = T('meta.title');
   $$('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === l));
-  const wa = `https://wa.me/${PHONE}?text=${encodeURIComponent(dict['wa.msg'])}`;
+  const wa = `https://wa.me/${PHONE}?text=${encodeURIComponent(T('wa.msg'))}`;
   $$('.js-wa').forEach(a => (a.href = wa));
   renderReviews();
+  renderCourses();
   updateOpen();
   buildLabels();
   formatCounters(true);
+  if (!$('#modal').hidden) closeModal();
   try { localStorage.setItem('em-lang', l); } catch (e) { /* private mode */ }
   needsLayout = true;
 }
 
-/* ====================== scroll-linked DOM ====================== */
-const counters = $$('[data-count]');
-function formatCounters(force) {
-  const vh = innerHeight;
-  counters.forEach(el => {
-    const r = el.getBoundingClientRect();
-    const t = ease(ramp(vh - r.top, vh * 0.05, vh * 0.45));
-    const target = parseFloat(el.dataset.count);
-    const dec = +(el.dataset.dec || 0);
-    const v = target * t;
-    const key = v.toFixed(dec);
-    if (force || el._k !== key) {
-      el._k = key;
-      el.textContent = lang === 'fr' ? key.replace('.', ',') : key;
-    }
-  });
-}
-
-/* ============================ 3D ============================ */
-const canvas = $('#gl');
-const stage = $('#stage');
-const story = $('#story');
-let renderer, scene, camera, car, xray, laser, laserSheet, shadow, ring, streaks;
-let parts = {};
-let anchors = [];
-let normalMats = [];
-let xrayMats = [];
-const planeN = new THREE.Plane(new THREE.Vector3(0, 0, -1), 100);
-const planeX = new THREE.Plane(new THREE.Vector3(0, 0, 1), -100);
-let headMats = [];
-let glOK = true;
-
+/* ====================== story: keyframe images ====================== */
+// Labels are anchored on the keyframe images in normalised coordinates (0..1).
 const LABELS = [
-  { id: 'engine', grp: 1, hm: 58, h: 96, node: 'Engine', off: [0, 0.22, 0], k: 'l1.engine', v: 'l1.engine.v', cls: 'ok' },
-  { id: 'brakes', grp: 1, hm: 18, h: 34, node: 'WheelFrontL', off: [0.15, 0.05, 0], k: 'l1.brakes', v: 'l1.brakes.v', cls: 'warn' },
-  { id: 'battery', grp: 1, hm: 98, h: 150, node: 'Engine', off: [0.45, 0.25, -0.35], k: 'l1.battery', v: 'l1.battery.v', cls: 'ok' },
-  { id: 'elec', grp: 1, hm: 138, h: 46, node: 'InteriorDashMid', off: [0, 0.12, 0], k: 'l1.elec', v: 'l1.elec.v', cls: 'ok' },
-  { id: 'susp', grp: 1, hm: 40, h: 60, node: 'WheelRearL', off: [0.1, 0.3, 0], k: 'l1.susp', v: 'l1.susp.v', cls: 'ok' },
-  { id: 'body', grp: 2, node: 'BodyRoofPanel', off: [0, 0.12, 0], k: 'l2.body', cls: 'red' },
-  { id: 'engine2', grp: 2, node: 'Engine', off: [0, 0.18, 0], k: 'l2.engine', cls: 'red' },
-  { id: 'cabin', grp: 2, node: 'InteriorSeatsColor1', off: [0, 0.25, 0], k: 'l2.cabin', cls: 'red' },
-  { id: 'trans', grp: 2, node: 'Axles', off: [0, 0.05, -1.0], k: 'l2.trans', cls: 'red' },
-  { id: 'brk2', grp: 2, node: 'WheelFrontL', off: [0.25, 0.25, 0], k: 'l2.brakes', cls: 'red' },
+  { id: 'engine', grp: 1, k: 1, x: 0.30, y: 0.47, h: 96, hm: 58, t: 'l1.engine', v: 'l1.engine.v', cls: 'ok' },
+  { id: 'brakes', grp: 1, k: 1, x: 0.32, y: 0.62, h: 34, hm: 18, t: 'l1.brakes', v: 'l1.brakes.v', cls: 'warn' },
+  { id: 'battery', grp: 1, k: 1, x: 0.37, y: 0.44, h: 150, hm: 98, t: 'l1.battery', v: 'l1.battery.v', cls: 'ok' },
+  { id: 'elec', grp: 1, k: 1, x: 0.46, y: 0.45, h: 46, hm: 138, t: 'l1.elec', v: 'l1.elec.v', cls: 'ok' },
+  { id: 'susp', grp: 1, k: 1, x: 0.68, y: 0.58, h: 60, hm: 40, t: 'l1.susp', v: 'l1.susp.v', cls: 'ok' },
+  { id: 'body', grp: 2, k: 2, x: 0.56, y: 0.22, h: 40, hm: 30, t: 'l2.body', cls: 'red' },
+  { id: 'engine2', grp: 2, k: 2, x: 0.40, y: 0.62, h: 40, hm: 30, t: 'l2.engine', cls: 'red' },
+  { id: 'cabin', grp: 2, k: 2, x: 0.55, y: 0.45, h: 40, hm: 30, t: 'l2.cabin', cls: 'red' },
+  { id: 'trans', grp: 2, k: 2, x: 0.60, y: 0.62, h: 70, hm: 50, t: 'l2.trans', cls: 'red' },
+  { id: 'brk2', grp: 2, k: 2, x: 0.56, y: 0.83, h: 40, hm: 30, t: 'l2.brakes', cls: 'red' },
 ];
 
 function buildLabels() {
-  const box = $('#labels');
-  const dict = I18N[lang];
-  box.innerHTML = LABELS.map(l => `<div class="lbl ${l.cls}" data-id="${l.id}" style="--h:${l.h || 46}px;--hm:${l.hm || 30}px"><span class="stem"></span><span class="pin"></span><div class="box">${dict[l.k]}${l.v ? `<small>${dict[l.v]}</small>` : ''}</div></div>`).join('');
-  LABELS.forEach(l => (l.el = box.querySelector(`[data-id="${l.id}"]`)));
+  $('#labels').innerHTML = LABELS.map(l => `<div class="lbl ${l.cls}" data-id="${l.id}" style="--h:${l.h}px;--hm:${l.hm}px"><span class="stem"></span><span class="pin"></span><div class="box">${T(l.t)}${l.v ? `<small>${T(l.v)}</small>` : ''}</div></div>`).join('');
+  LABELS.forEach(l => (l.el = $(`#labels [data-id="${l.id}"]`)));
 }
 
-function makeXrayMaterial(color, base, rim) {
-  return new THREE.ShaderMaterial({
-    uniforms: {
-      uColor: { value: new THREE.Color(color) },
-      uBase: { value: base },
-      uRim: { value: rim },
-      uScan: { value: 10 },
-    },
-    vertexShader: /* glsl */ `
-      #include <common>
-      #include <clipping_planes_pars_vertex>
-      varying vec3 vN; varying vec3 vV; varying vec3 vW;
-      void main(){
-        vec4 wp = modelMatrix * vec4(position, 1.0);
-        vW = wp.xyz;
-        vec4 mvPosition = viewMatrix * wp;
-        vN = normalize(normalMatrix * normal);
-        vV = -mvPosition.xyz;
-        gl_Position = projectionMatrix * mvPosition;
-        #include <clipping_planes_vertex>
-      }`,
-    fragmentShader: /* glsl */ `
-      #include <common>
-      #include <clipping_planes_pars_fragment>
-      uniform vec3 uColor; uniform float uBase; uniform float uRim; uniform float uScan;
-      varying vec3 vN; varying vec3 vV; varying vec3 vW;
-      void main(){
-        #include <clipping_planes_fragment>
-        float f = 1.0 - abs(dot(normalize(vN), normalize(vV)));
-        f = pow(f, 2.0);
-        float lines = 0.75 + 0.25 * step(0.5, fract(vW.y * 22.0));
-        float front = exp(-abs(vW.z - uScan) * 7.0);
-        vec3 c = uColor * (uBase + f * uRim) * lines + vec3(1.0, 0.18, 0.2) * front * 0.9;
-        gl_FragColor = vec4(c, 1.0);
-      }`,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
-    clipping: true,
-    clippingPlanes: [planeX],
-  });
-}
+const stage = $('#stage');
+const story = $('#story');
+const framesBox = $('#frames');
+const frames = $$('#frames .fr');
+const scanbar = $('#scanbar');
+let vw = 0, vh = 0, mobile = false, needsLayout = true;
 
-function radialTexture(stops, size = 256) {
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const g = c.getContext('2d');
-  const gr = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  stops.forEach(([o, col]) => gr.addColorStop(o, col));
-  g.fillStyle = gr;
-  g.fillRect(0, 0, size, size);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
-function sheetTexture() {
-  const w = 64, h = 256;
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  const g = c.getContext('2d');
-  const gx = g.createLinearGradient(0, 0, w, 0);
-  gx.addColorStop(0, 'rgba(255,40,50,0)');
-  gx.addColorStop(0.5, 'rgba(255,60,70,1)');
-  gx.addColorStop(1, 'rgba(255,40,50,0)');
-  g.fillStyle = gx;
-  g.fillRect(0, 0, w, h);
-  g.globalCompositeOperation = 'destination-in';
-  const gy = g.createLinearGradient(0, 0, 0, h);
-  gy.addColorStop(0, 'rgba(0,0,0,0)');
-  gy.addColorStop(0.25, 'rgba(0,0,0,1)');
-  gy.addColorStop(0.85, 'rgba(0,0,0,1)');
-  gy.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = gy;
-  g.fillRect(0, 0, w, h);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
-function initGL() {
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  } catch (e) {
-    glOK = false;
-    document.body.classList.add('no-gl');
-    return false;
-  }
-  renderer.setClearColor(0x000000, 0);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.localClippingEnabled = true;
-
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.85;
-
-  const key = new THREE.DirectionalLight(0xffffff, 1.6);
-  key.position.set(4, 7, 5);
-  scene.add(key);
-  const rim = new THREE.PointLight(0xff1a1f, 40, 18, 1.6);
-  rim.position.set(-3.5, 2.2, -4);
-  scene.add(rim);
-  const rim2 = new THREE.PointLight(0x7cc8ff, 14, 14, 1.8);
-  rim2.position.set(4, 1.2, -3);
-  scene.add(rim2);
-
-  // contact shadow
-  shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(3.3, 5.6),
-    new THREE.MeshBasicMaterial({ map: radialTexture([[0, 'rgba(0,0,0,0.85)'], [0.55, 'rgba(0,0,0,0.45)'], [1, 'rgba(0,0,0,0)']]), transparent: true, depthWrite: false })
-  );
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.position.y = 0.003;
-  scene.add(shadow);
-
-  // studio floor ring
-  ring = new THREE.Group();
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0xff2028, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
-  const r1 = new THREE.Mesh(new THREE.RingGeometry(3.05, 3.08, 160), ringMat);
-  const r2 = new THREE.Mesh(new THREE.RingGeometry(3.35, 3.355, 160), ringMat.clone());
-  r2.material.opacity = 0.18;
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(3.6, 96), new THREE.MeshBasicMaterial({ map: radialTexture([[0, 'rgba(237,0,5,0.22)'], [0.7, 'rgba(237,0,5,0.06)'], [1, 'rgba(237,0,5,0)']]), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-  [r1, r2, glow].forEach(m => { m.rotation.x = -Math.PI / 2; ring.add(m); });
-  glow.position.y = -0.001;
-  ring.position.y = 0.001;
-  ring.userData = { ringMat, glow };
-  scene.add(ring);
-
-  // scanner
-  laser = new THREE.Group();
-  laserSheet = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.9), new THREE.MeshBasicMaterial({ map: sheetTexture(), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-  laserSheet.scale.x = 1;
-  const beam = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.012, 0.012), new THREE.MeshBasicMaterial({ color: 0xff3a40, blending: THREE.AdditiveBlending, transparent: true }));
-  beam.position.y = -0.9;
-  const beamTop = beam.clone();
-  beamTop.position.y = 0.9;
-  const post1 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 1.8, 0.012), beam.material);
-  post1.position.x = 1.7;
-  const post2 = post1.clone();
-  post2.position.x = -1.7;
-  laser.add(laserSheet, beam, beamTop, post1, post2);
-  laser.position.y = 0.92;
-  laser.visible = false;
-  scene.add(laser);
-
-  // speed streaks (ECU step)
-  const N = 260;
-  const pos = new Float32Array(N * 6);
-  const seeds = [];
-  for (let i = 0; i < N; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const r = 1.7 + Math.random() * 2.6;
-    const x = Math.cos(a) * r, y = 0.15 + Math.abs(Math.sin(a)) * 2.2 * Math.random();
-    seeds.push({ x, y, z: Math.random() * 16 - 8, len: 0.4 + Math.random() * 1.2, sp: 0.6 + Math.random() });
-  }
-  const sg = new THREE.BufferGeometry();
-  sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  streaks = new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0xff4a50, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-  streaks.userData.seeds = seeds;
-  streaks.frustumCulled = false;
-  scene.add(streaks);
-  return true;
-}
-
-function setupCar(gltf) {
-  const root = gltf.scene;
-  car = new THREE.Group();
-  car.add(root);
-  scene.add(car);
-  root.updateMatrixWorld(true);
-
-  // center the car on the origin (z) and sit it on the floor
-  const box = new THREE.Box3().setFromObject(root);
-  const c = box.getCenter(new THREE.Vector3());
-  root.position.x -= c.x;
-  root.position.z -= c.z;
-  root.position.y -= box.min.y;
-  root.updateMatrixWorld(true);
-
-  const byName = n => root.getObjectByName(n);
-  const under = byName('BodyUnderside');
-
-  // hood: re-pivot on its rear edge so it opens like a real bonnet
-  const hood = byName('BodyHood');
-  if (hood && under) {
-    const hb = new THREE.Box3().setFromObject(hood);
-    const pivotWorld = new THREE.Vector3((hb.min.x + hb.max.x) / 2, hb.max.y - 0.02, hb.min.z + 0.05);
-    const pivot = new THREE.Object3D();
-    pivot.name = 'HoodPivot';
-    under.add(pivot);
-    pivot.position.copy(under.worldToLocal(pivotWorld.clone()));
-    pivot.updateMatrixWorld(true);
-    pivot.attach(hood);
-  }
-
-  // materials: brand red paint, cheap glass, glowing lights
-  root.traverse(o => {
-    if (!o.isMesh) return;
-    const m = o.material;
-    if (m.transmission > 0) {
-      m.transmission = 0;
-      m.transparent = true;
-      m.opacity = 0.32;
-      m.color.set(0x0b0d14);
-      m.roughness = 0.04;
-      m.metalness = 0.2;
-    }
-    if (/Paint 1/.test(m.name)) {
-      m.color.set('#d8000a');
-      if ('clearcoat' in m) { m.clearcoat = 1; m.clearcoatRoughness = 0.06; }
-    }
-    if (/Headlight|Signallight/.test(m.name)) {
-      m.emissive = new THREE.Color(0xffffff);
-      m.emissiveIntensity = 1.2;
-      if (!headMats.includes(m)) headMats.push(m);
-    }
-    if (/Brakelight/.test(m.name)) {
-      m.emissive = new THREE.Color(0xff1010);
-      m.emissiveIntensity = 1.0;
-      if (!headMats.includes(m)) headMats.push(m);
-    }
-    if (/^(Hardware|Mirror|Brake|Rim1|Rim2)$/.test(m.name) || (!m.name && m.map)) {
-      m.map = null;
-      if (m.name === 'Rim2') { m.color.set(0x9aa0aa); m.metalness = 1; m.roughness = 0.28; }
-      if (m.name === 'Brake') m.color.set('#e0000a');
-    }
-    m.envMapIntensity = 1;
-    if (!normalMats.includes(m)) normalMats.push(m);
-  });
-  normalMats.forEach(m => { m.clippingPlanes = [planeN]; m.needsUpdate = true; });
-
-  // x-ray twin (shares geometry)
-  xray = root.clone(true);
-  xray.position.copy(root.position);
-  car.add(xray);
-  const internal = /Engine|Axles|Brake|InteriorSeats|InteriorSteering|InteriorDash|Pedal/;
-  const matBody = makeXrayMaterial('#7cc8ff', 0.035, 0.9);
-  const matGlass = makeXrayMaterial('#7cc8ff', 0.0, 0.35);
-  const matInt = makeXrayMaterial('#ff2a36', 0.16, 1.2);
-  xrayMats = [matBody, matGlass, matInt];
-  xray.traverse(o => {
-    if (!o.isMesh) return;
-    const chain = [];
-    let q = o;
-    while (q) { chain.push(q.name); q = q.parent; }
-    const isInt = chain.some(x => internal.test(x || ''));
-    o.material = isInt ? matInt : o.material.opacity < 1 ? matGlass : matBody;
-    o.renderOrder = 2;
-  });
-  xray.visible = false;
-
-  // movable parts (original model only)
-  const shell = [];
-  under.children.forEach(ch => {
-    if (/^Body|License|HoodPivot/.test(ch.name)) shell.push(ch);
-  });
-  const interior = under.children.filter(ch => /^Interior/.test(ch.name));
-  const wheels = ['WheelFrontL', 'WheelFrontR', 'WheelRearL', 'WheelRearR'].map(byName).filter(Boolean);
-  const engine = byName('Engine');
-  const doors = ['BodyDoorLColor1', 'BodyDoorRColor1'].map(byName).filter(Boolean);
-  const store = o => { o.userData.rest = { p: o.position.clone(), q: o.quaternion.clone() }; return o; };
-  [...shell, ...interior, ...wheels, engine, ...doors].filter(Boolean).forEach(store);
-  const pivot = root.getObjectByName('HoodPivot');
-  if (pivot) store(pivot);
-  parts = { under, shell, interior, wheels, engine, doors, pivot };
-
-  // label anchors: center of each node's geometry, stored in node space
-  root.updateMatrixWorld(true);
-  anchors = LABELS.map(l => {
-    const node = byName(l.node);
-    if (!node) return null;
-    const b = new THREE.Box3().setFromObject(node);
-    const cw = b.getCenter(new THREE.Vector3());
-    return { node, local: node.worldToLocal(cw.clone()), off: new THREE.Vector3(...l.off), def: l };
-  });
-}
-
-/* --------------------- timeline --------------------- */
-// [p, azimuth°, elevation°, distance, targetY]
-const CAM = [
-  [0.00, 36, 8, 9.6, 0.55],
-  [0.08, 46, 9, 9.6, 0.55],
-  [0.17, 74, 6, 12.4, 0.6],
-  [0.36, 80, 8, 12.4, 0.6],
-  [0.44, 52, 16, 12.2, 0.85],
-  [0.53, 36, 22, 12.8, 1.1],
-  [0.61, 26, 26, 13.0, 1.1],
-  [0.68, 8, 5, 8.4, 0.55],
-  [0.79, -6, 3, 7.6, 0.5],
-  [0.86, -55, 11, 11.4, 0.6],
-  [1.00, -205, 12, 11.6, 0.6],
-];
-function camAt(p) {
-  let i = 0;
-  while (i < CAM.length - 2 && p > CAM[i + 1][0]) i++;
-  const a = CAM[i], b = CAM[i + 1];
-  const t = smooth(ramp(p, a[0], b[0]));
-  return a.map((v, k) => lerp(v, b[k], t));
-}
-
-const SCAN_FRONT = 2.75, SCAN_BACK = -2.75;
-function scanAt(p) {
-  if (p < 0.19) return SCAN_FRONT;
-  if (p < 0.33) return lerp(SCAN_FRONT, SCAN_BACK, smooth(ramp(p, 0.19, 0.33)));
-  if (p < 0.37) return SCAN_BACK;
-  if (p < 0.43) return lerp(SCAN_BACK, SCAN_FRONT, smooth(ramp(p, 0.37, 0.43)));
-  return SCAN_FRONT;
-}
-
-let vw = 0, vh = 0, mobile = false, offFrac = 0.18, offY = 0.27;
-const OFFY = [[0, 0.25], [0.09, 0.25], [0.16, 0.1], [0.62, 0.12], [0.68, 0.0], [0.83, 0.0], [0.88, -0.02], [1, -0.02]];
-function offYAt(p) {
-  let i = 0;
-  while (i < OFFY.length - 2 && p > OFFY[i + 1][0]) i++;
-  return lerp(OFFY[i][1], OFFY[i + 1][1], smooth(ramp(p, OFFY[i][0], OFFY[i + 1][0])));
-}
 function layout() {
   vw = stage.clientWidth;
   vh = stage.clientHeight;
   mobile = vw < 760;
-  if (!renderer) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.75 : 2);
-  renderer.setPixelRatio(dpr);
-  renderer.setSize(vw, vh, false);
-  camera.aspect = vw / vh;
-  // push the car away from the text column
-  const rtl = document.documentElement.dir === 'rtl';
-  if (mobile) camera.setViewOffset(vw, vh, 0, -vh * offY, vw, vh);
-  else if (vw / vh > 1.15) camera.setViewOffset(vw, vh, (rtl ? 1 : -1) * vw * offFrac, 0, vw, vh);
-  else camera.setViewOffset(vw, vh, 0, -vh * 0.12, vw, vh);
-  camera.updateProjectionMatrix();
-  stage.style.setProperty('--spot-x', mobile ? '50%' : rtl ? '35%' : '65%');
+  stage.style.setProperty('--spot-x', mobile ? '50%' : document.documentElement.dir === 'rtl' ? '36%' : '64%');
   needsLayout = false;
 }
 
-/* --------------------- per-frame update --------------------- */
+// mobile: vertical centre of the car per step (fraction of the screen height)
+const MOB_Y = [[0, 0.71], [0.09, 0.71], [0.16, 0.6], [0.62, 0.6], [0.68, 0.53], [0.83, 0.5], [0.88, 0.47], [1, 0.47]];
+function track(points, p) {
+  let i = 0;
+  while (i < points.length - 2 && p > points[i + 1][0]) i++;
+  return lerp(points[i][1], points[i + 1][1], smooth(ramp(p, points[i][0], points[i + 1][0])));
+}
+
+// the frame box (16:9) position for progress p
+function boxAt(p) {
+  const rtl = document.documentElement.dir === 'rtl';
+  if (mobile) {
+    const w = vw * 1.22;
+    return { w, h: w * 9 / 16, cx: vw / 2, cy: vh * track(MOB_Y, p) };
+  }
+  const end = smooth(ramp(p, 0.83, 0.88));
+  const w = Math.min(vw * lerp(0.62, 0.52, end), (vh - 90) * 1.7);
+  const cx = vw * (rtl ? lerp(0.36, 0.44, end) : lerp(0.64, 0.56, end));
+  return { w, h: w * 9 / 16, cx, cy: vh * 0.54 };
+}
+
+// opacity / scale / clip of every keyframe for progress p
+function framesAt(p) {
+  const scan = smooth(ramp(p, 0.17, 0.33));
+  const f = [
+    { o: 1, s: lerp(1.07, 1, ease(ramp(p, 0, 0.12))) },
+    { o: scan > 0 ? 1 : 0, s: 1, clip: scan },
+    { o: ramp(p, 0.4, 0.47), s: lerp(1.08, 1, ease(ramp(p, 0.4, 0.52))) },
+    { o: ramp(p, 0.62, 0.68), s: lerp(1.16, 1, ease(ramp(p, 0.62, 0.76))) },
+    { o: ramp(p, 0.82, 0.87), s: lerp(1.05, 1, ease(ramp(p, 0.82, 1))), x: lerp(-0.015, 0.015, ramp(p, 0.82, 1)) },
+  ];
+  return { f, scan };
+}
+
 const panels = {};
 $$('[data-panel]').forEach(el => (panels[el.dataset.panel] = el));
 const repItems = $$('.rep-list li');
@@ -486,11 +193,9 @@ const ecuStage = $('#ecuStage');
 const ecuLen = ecuStage.getTotalLength ? ecuStage.getTotalLength() : 400;
 ecuStage.style.strokeDasharray = ecuLen;
 const railItems = $$('#rail li');
-const tmp = new THREE.Vector3();
 
 function setPanel(el, op, dy = 26) {
-  if (!el) return;
-  if (el._op === op) return;
+  if (!el || el._op === op) return;
   el._op = op;
   el.style.opacity = op;
   el.style.visibility = op < 0.01 ? 'hidden' : 'visible';
@@ -498,7 +203,8 @@ function setPanel(el, op, dy = 26) {
   el.style.transform = `${base}translateY(${((1 - op) * dy).toFixed(1)}px)`;
 }
 
-function updateDOM(p) {
+function updateStory(p) {
+  // text panels and cards
   setPanel(panels.hero, 1 - ramp(p, 0.045, 0.095), -30);
   setPanel(panels.cue, 1 - ramp(p, 0.005, 0.03), 0);
   setPanel(panels.s1, ramp(p, 0.135, 0.175) * (1 - ramp(p, 0.365, 0.405)));
@@ -507,129 +213,200 @@ function updateDOM(p) {
   setPanel(panels.s4, ramp(p, 0.84, 0.875));
   setPanel(panels.ecu, ramp(p, 0.675, 0.71) * (1 - ramp(p, 0.79, 0.825)), 40);
   setPanel(panels.report, ramp(p, 0.85, 0.885), 40);
-
   ecuStage.style.strokeDashoffset = (ecuLen * (1 - ease(ramp(p, 0.69, 0.77)))).toFixed(1);
   repItems.forEach((li, i) => li.classList.toggle('done', p > 0.875 + i * 0.016));
   repBadge.classList.toggle('on', p > 0.975);
-
   const step = p < 0.42 ? 1 : p < 0.64 ? 2 : p < 0.83 ? 3 : 4;
   $('#rail').classList.toggle('on', p > 0.12 && p < 0.995);
   railItems.forEach(li => li.classList.toggle('on', +li.dataset.step === step));
   $('#progress').style.transform = `scaleX(${p.toFixed(4)})`;
+  const scanning = p > 0.17 && p < 0.335;
+  $('#scanLabel').style.opacity = scanning ? 1 : 0;
+  $('#scanPct').textContent = Math.round(ramp(p, 0.17, 0.33) * 100) + '%';
 
-  const scanning = p > 0.185 && p < 0.34;
-  const sl = $('#scanLabel');
-  sl.style.opacity = scanning ? 1 : 0;
-  $('#scanPct').textContent = Math.round(ramp(p, 0.19, 0.33) * 100) + '%';
-}
-
-function updateScene(p, t) {
-  if (!car) return;
-  const of = lerp(0.18, 0.07, smooth(ramp(p, 0.83, 0.88)));
-  const oy = offYAt(p);
-  if (Math.abs(of - offFrac) > 0.0005 || (mobile && Math.abs(oy - offY) > 0.0005)) { offFrac = of; offY = oy; layout(); }
-  // camera
-  const [, az0, el, dist0, ty] = camAt(p);
-  const az = (az0 + Math.sin(t * 0.00025) * 2.2) * D2R;
-  const e = el * D2R;
-  let dist = dist0;
-  const aspect = vw / vh;
-  if (aspect < 1.25) {
-    const hfov = 2 * Math.atan(Math.tan((camera.fov * D2R) / 2) * aspect);
-    const span = 2.8 + 2.0 * Math.abs(Math.sin(az));
-    dist = Math.max(dist, (span / 2) / Math.tan(hfov / 2) * 1.12);
-  }
-  camera.position.set(Math.sin(az) * Math.cos(e) * dist, ty + Math.sin(e) * dist, Math.cos(az) * Math.cos(e) * dist);
-  camera.lookAt(0, ty, 0);
-
-  // parts: doors + hood open, then explode
-  const open = ease(ramp(p, 0.43, 0.49)) * (1 - ease(ramp(p, 0.615, 0.665)));
-  const ex = ease(ramp(p, 0.48, 0.56)) * (1 - ease(ramp(p, 0.6, 0.655)));
-  const { shell, interior, wheels, engine, doors, pivot } = parts;
-  // local frame of BodyUnderside: +z is up, ±x is the side
-  shell.forEach(o => { const r = o.userData.rest; o.position.copy(r.p); o.position.z += ex * 1.05; });
-  interior.forEach(o => { const r = o.userData.rest; o.position.copy(r.p); o.position.z += ex * 0.2; });
-  if (engine) { engine.position.copy(engine.userData.rest.p); engine.position.z += ex * 0.42; }
-  wheels.forEach(o => {
-    const r = o.userData.rest;
-    o.position.copy(r.p);
-    o.position.x += Math.sign(r.p.x) * ex * 0.6;
-    o.position.z -= ex * 0.05;
-  });
-  doors.forEach(o => {
-    const r = o.userData.rest;
-    o.quaternion.copy(r.q);
-    o.rotateX(open * 1.15);
-    o.rotateY(Math.sign(r.p.x) * open * 0.12);
-  });
-  if (pivot) {
-    pivot.quaternion.copy(pivot.userData.rest.q);
-    pivot.rotateX(-open * 1.05 - ex * 0.25);
-  }
-  shadow.material.opacity = 1 - ex * 0.45;
-
-  // scanner + x-ray
-  const s = scanAt(p);
-  const scanActive = s < SCAN_FRONT - 0.01;
-  planeN.constant = scanActive ? s : 100;
-  planeX.constant = scanActive ? -s : -100;
-  xray.visible = scanActive;
-  xrayMats.forEach(m => (m.uniforms.uScan.value = s));
-  const moving = (p > 0.185 && p < 0.335) || (p > 0.365 && p < 0.435);
-  laser.visible = moving && scanActive && s > SCAN_BACK + 0.01;
-  laser.position.z = s;
-  laserSheet.material.opacity = 0.42 + Math.sin(t * 0.012) * 0.08;
-
-  // ECU: lights + streaks
-  const ecu = ramp(p, 0.665, 0.71) * (1 - ramp(p, 0.8, 0.84));
-  const pulse = 0.5 + 0.5 * Math.sin(t * 0.006);
-  headMats.forEach(m => (m.emissiveIntensity = 1.1 + ecu * (2.4 + pulse * 1.6)));
-  ring.userData.ringMat.opacity = 0.45 + ecu * 0.5 * (0.6 + 0.4 * pulse);
-  ring.userData.glow.material.opacity = 0.8 + ecu * 0.6;
-  streaks.material.opacity = ecu * 0.75;
-  if (ecu > 0.001) {
-    const arr = streaks.geometry.attributes.position.array;
-    streaks.userData.seeds.forEach((sd, i) => {
-      let z = ((sd.z - t * 0.012 * sd.sp) % 16 + 16) % 16 - 8;
-      arr.set([sd.x, sd.y, z, sd.x, sd.y, z + sd.len], i * 6);
-    });
-    streaks.geometry.attributes.position.needsUpdate = true;
-  }
-  ring.rotation.y = t * 0.0001;
-
-  renderer.render(scene, camera);
-  placeLabels(p, s);
-}
-
-function placeLabels(p, s) {
-  const g1 = p > 0.185 && p < 0.42;
-  const g2 = p > 0.535 && p < 0.605;
-  anchors.forEach(a => {
-    if (!a) return;
-    const el = a.def.el;
-    if (!el) return;
-    a.node.localToWorld(tmp.copy(a.local));
-    tmp.add(a.off);
-    let on = false;
-    if (a.def.grp === 1) on = g1 && tmp.z > s + 0.05;
-    if (a.def.grp === 2) on = g2;
-    if (on) {
-      tmp.project(camera);
-      if (tmp.z > 1) on = false;
-      const x = (tmp.x * 0.5 + 0.5) * vw;
-      const y = (-tmp.y * 0.5 + 0.5) * vh;
-      el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+  // keyframes
+  const b = boxAt(p);
+  framesBox.style.cssText = `width:${b.w.toFixed(1)}px;height:${b.h.toFixed(1)}px;transform:translate(${(b.cx - b.w / 2).toFixed(1)}px,${(b.cy - b.h / 2).toFixed(1)}px)`;
+  const { f, scan } = framesAt(p);
+  let covered = false;
+  for (let i = f.length - 1; i >= 0; i--) {
+    const el = frames[i], st = f[i];
+    const vis = !covered && st.o > 0.001;
+    el.style.visibility = vis ? 'visible' : 'hidden';
+    if (vis) {
+      el.style.opacity = st.o.toFixed(3);
+      el.style.transform = `translateX(${((st.x || 0) * 100).toFixed(2)}%) scale(${st.s.toFixed(4)})`;
+      el.style.clipPath = st.clip !== undefined ? `inset(0 ${((1 - st.clip) * 100).toFixed(2)}% 0 0)` : '';
     }
-    if (el._on !== on) { el._on = on; el.style.opacity = on ? 1 : 0; }
+    if (st.o >= 0.999 && st.clip === undefined) covered = true;
+  }
+  scanbar.style.opacity = scanning && scan < 0.995 ? 1 : 0;
+  scanbar.style.left = (scan * 100).toFixed(2) + '%';
+
+  // labels
+  const g1 = p > 0.19 && p < 0.41;
+  const g2 = p > 0.5 && p < 0.61;
+  LABELS.forEach(l => {
+    if (!l.el) return;
+    let on = l.grp === 1 ? g1 && scan >= l.x : g2;
+    if (on) {
+      const s = f[l.k].s;
+      const x = b.cx + (l.x - 0.5) * b.w * s;
+      const y = b.cy + (l.y - 0.5) * b.h * s;
+      if (x < 8 || x > vw - 8) on = false;
+      l.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+    }
+    if (l.el._on !== on) { l.el._on = on; l.el.style.opacity = on ? 1 : 0; }
   });
 }
 
-/* --------------------- loop --------------------- */
-let pTarget = 0, pCur = 0, last = performance.now(), recTime = 0, stageVisible = true;
+/* ====================== counters ====================== */
+const counters = $$('[data-count]');
+function formatCounters(force) {
+  counters.forEach(el => {
+    const r = el.getBoundingClientRect();
+    const t = ease(ramp(innerHeight - r.top, innerHeight * 0.05, innerHeight * 0.45));
+    const key = (parseFloat(el.dataset.count) * t).toFixed(+(el.dataset.dec || 0));
+    if (force || el._k !== key) {
+      el._k = key;
+      el.textContent = lang === 'fr' ? key.replace('.', ',') : key;
+    }
+  });
+}
+
+/* ====================== modal: course details + sign-up ====================== */
+const modal = $('#modal');
+const body = $('#modalBody');
+let lastFocus = null;
+
+function openModal(html) {
+  lastFocus = document.activeElement;
+  body.innerHTML = html;
+  modal.hidden = false;
+  document.documentElement.classList.add('modal-open');
+  requestAnimationFrame(() => modal.classList.add('in'));
+  const first = body.querySelector('input, select, button.btn');
+  if (first && !mobile) first.focus();
+}
+function closeModal() {
+  modal.classList.remove('in');
+  document.documentElement.classList.remove('modal-open');
+  modal.hidden = true;
+  body.innerHTML = '';
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+
+function showProgram(id) {
+  const c = COURSES.find(x => x.id === id);
+  if (!c) return;
+  const fmt = n => n.toLocaleString(lang === 'ar' ? 'ar-TN' : 'fr-FR').replace(/ | /g, ' ');
+  openModal(`
+    <div class="m-head">
+      <span class="course-ic">${icon(c.icon)}</span>
+      <div><span class="course-badge">${esc(L(c.badge))}</span><h2 id="modalTitle">${esc(L(c.title))}</h2></div>
+    </div>
+    <p class="m-lead">${esc(L(c.tagline))}</p>
+    <h3 class="m-sub">${T('courses.modules')}</h3>
+    <ol class="m-modules">${c.modules.map(m => `<li><b>${esc(L(m.t))}</b><span>${esc(L(m.d))}</span></li>`).join('')}</ol>
+    <h3 class="m-sub">${T('courses.perks')}</h3>
+    <div class="m-perks">${c.perks.map(m => `<div><b>${esc(L(m.t))}</b><span>${esc(L(m.d))}</span></div>`).join('')}</div>
+    <div class="m-foot">
+      <div class="price">${c.oldPrice ? `<s>${fmt(c.oldPrice)} ${T('courses.currency')}</s>` : ''}<b>${fmt(c.price)}</b><span>${T('courses.currency')}</span><small>${esc(L(GUARANTEE))}</small></div>
+      <button class="btn btn-red js-signup" data-type="${c.id}" type="button">${T('courses.signupThis')}</button>
+    </div>`);
+}
+
+function showForm(type = '') {
+  const opts = [...COURSES.map(c => [c.id, `${L(c.title)} — ${c.price} ${T('courses.currency')}`]), [CONSULT.id, L(CONSULT.title)]];
+  openModal(`
+    <h2 id="modalTitle" class="f-title">${T('form.title')}</h2>
+    <p class="m-lead">${T('form.sub')}</p>
+    <form class="f" id="signupForm" novalidate>
+      <div class="f-row"><label for="f-nom">${T('form.name')} *</label><input id="f-nom" name="nom" autocomplete="name" required maxlength="80"><em></em></div>
+      <div class="f-2">
+        <div class="f-row"><label for="f-tel">${T('form.phone')} *</label><input id="f-tel" name="telephone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+216 •• ••• •••" dir="ltr" required maxlength="30"><em></em></div>
+        <div class="f-row"><label for="f-email">${T('form.email')} *</label><input id="f-email" name="email" type="email" autocomplete="email" dir="ltr" required maxlength="120"><em></em></div>
+      </div>
+      <div class="f-2">
+        <div class="f-row"><label for="f-ville">${T('form.city')} *</label><input id="f-ville" name="ville" list="f-cities" autocomplete="address-level2" placeholder="${T('form.city.ph')}" required maxlength="60"><em></em>
+          <datalist id="f-cities">${CITIES.map(c => `<option value="${c}">`).join('')}</datalist></div>
+        <div class="f-row"><label for="f-type">${T('form.type')} *</label><select id="f-type" name="formation" required><option value="">${T('form.type.ph')}</option>${opts.map(([v, t]) => `<option value="${v}"${v === type ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select><em></em></div>
+      </div>
+      <div class="f-row"><label for="f-msg">${T('form.msg')}</label><textarea id="f-msg" name="message" rows="3" maxlength="1000" placeholder="${T('form.msg.ph')}"></textarea></div>
+      <label class="f-check"><input type="checkbox" name="consent" required><span>${T('form.consent')}</span></label>
+      <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="f-err" id="f-err" role="alert"></p>
+      <button class="btn btn-red f-submit" type="submit">${T('form.submit')}</button>
+    </form>`);
+  const form = $('#signupForm');
+  form.dataset.t0 = String(Date.now());
+  form.addEventListener('submit', submitForm);
+  form.addEventListener('input', e => { const em = e.target.parentElement.querySelector('em'); if (em) em.textContent = ''; e.target.classList.remove('bad'); });
+}
+
+function waFor(d) {
+  const type = d.formation === 'consult' ? L(CONSULT.title) : L((COURSES.find(c => c.id === d.formation) || {}).title);
+  const lines = [T('form.wa.msg'), '', `${T('form.name')} : ${d.nom}`, `${T('form.phone')} : ${d.telephone}`, `${T('form.email')} : ${d.email}`, `${T('form.city')} : ${d.ville}`, `${T('form.type')} : ${type}`];
+  if (d.message) lines.push('', d.message);
+  return `https://wa.me/${PHONE}?text=${encodeURIComponent(lines.join('\n'))}`;
+}
+
+async function submitForm(e) {
+  e.preventDefault();
+  const form = e.target;
+  const fd = new FormData(form);
+  const d = Object.fromEntries(['nom', 'telephone', 'email', 'ville', 'formation', 'message'].map(k => [k, String(fd.get(k) || '').trim()]));
+  const bad = (name, msg) => { const el = form.elements[name]; el.classList.add('bad'); el.parentElement.querySelector('em').textContent = msg; return el; };
+  const errs = [];
+  if (d.nom.length < 2) errs.push(bad('nom', T('form.required')));
+  const digits = d.telephone.replace(/\D/g, '');
+  if (!d.telephone) errs.push(bad('telephone', T('form.required')));
+  else if (digits.length < 8 || digits.length > 15) errs.push(bad('telephone', T('form.badPhone')));
+  if (!d.email) errs.push(bad('email', T('form.required')));
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) errs.push(bad('email', T('form.badEmail')));
+  if (d.ville.length < 2) errs.push(bad('ville', T('form.required')));
+  if (!d.formation) errs.push(bad('formation', T('form.required')));
+  const consent = form.elements.consent.checked;
+  form.querySelector('.f-check').classList.toggle('bad', !consent);
+  if (errs.length || !consent) { (errs[0] || form.elements.consent).focus(); return; }
+
+  const btn = form.querySelector('.f-submit');
+  btn.disabled = true;
+  btn.textContent = T('form.sending');
+  let status = 0;
+  try {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ...d, consent: true, langue: lang, website: fd.get('website') || '', elapsed: Date.now() - +form.dataset.t0 }),
+    });
+    status = r.status;
+  } catch (err) { status = 0; }
+
+  const first = esc(d.nom.split(' ')[0]);
+  if (status === 201 || status === 200) {
+    body.innerHTML = `<div class="f-done"><span class="f-ok"><svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg></span><h2 id="modalTitle">${T('form.ok.title')}</h2><p>${first}, ${T('form.ok.text')}</p>
+      <div class="btns center"><a class="btn btn-ghost" href="${esc(waFor(d))}" target="_blank" rel="noopener">${T('form.wa')}</a><button class="btn btn-red" data-close type="button">${T('form.close')}</button></div></div>`;
+  } else {
+    body.innerHTML = `<div class="f-done"><span class="f-ok warn">!</span><h2 id="modalTitle">${T('form.fail.title')}</h2><p>${T(status === 429 ? 'form.rate' : 'form.fail.text')}</p>
+      <div class="btns center"><a class="btn btn-red" href="${esc(waFor(d))}" target="_blank" rel="noopener">${T('form.wa')}</a><button class="btn btn-ghost" data-close type="button">${T('form.close')}</button></div></div>`;
+  }
+}
+
+document.addEventListener('click', e => {
+  const sign = e.target.closest('.js-signup');
+  if (sign) { e.preventDefault(); showForm(sign.dataset.type || ''); return; }
+  const prog = e.target.closest('[data-program]');
+  if (prog) { showProgram(prog.dataset.program); return; }
+  if (e.target.closest('[data-close]')) closeModal();
+});
+addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+/* ====================== loop ====================== */
+let pTarget = 0, pCur = 0, last = performance.now();
 function storyProgress() {
   const r = story.getBoundingClientRect();
-  const total = story.offsetHeight - innerHeight;
-  return clamp(-r.top / total);
+  return clamp(-r.top / (story.offsetHeight - innerHeight));
 }
 
 function tick(now) {
@@ -637,24 +414,19 @@ function tick(now) {
   pTarget = storyProgress();
   const dt = Math.min(64, now - last);
   last = now;
-  pCur = RECORD ? pTarget : pCur + (pTarget - pCur) * (1 - Math.exp(-dt / 110));
+  pCur = RECORD ? pTarget : pCur + (pTarget - pCur) * (1 - Math.exp(-dt / 90));
   if (Math.abs(pTarget - pCur) < 0.00005) pCur = pTarget;
-  const t = RECORD ? recTime : now;
-  updateDOM(pCur);
-  if (glOK && stageVisible) updateScene(pCur, t);
+  updateStory(pCur);
   formatCounters();
   $('#nav').classList.toggle('solid', scrollY > 40);
 }
-
 function loop(now) {
   requestAnimationFrame(loop);
   tick(now);
 }
 
 // deterministic hook used for the pitch video recording
-// CSS animations/transitions are paused and stepped so every frame is exact.
 window.__renderAt = (ms, dt = 1000 / 30) => {
-  recTime = ms;
   document.getAnimations().forEach(a => {
     if (a.timeline !== document.timeline) return;
     if (a.playState !== 'paused') a.pause();
@@ -665,51 +437,24 @@ window.__renderAt = (ms, dt = 1000 / 30) => {
   return true;
 };
 
-/* --------------------- boot --------------------- */
-function decodeCar() {
-  const raw = $('#car-data').textContent.trim();
-  if (raw && raw[0] !== '%') {
-    const bin = atob(raw);
-    const out = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-    return Promise.resolve(out.buffer);
-  }
-  return fetch('../model/car.glb').then(r => r.arrayBuffer());
-}
-
-async function boot() {
+/* ====================== boot ====================== */
+function boot() {
   let saved = 'fr';
   try { saved = localStorage.getItem('em-lang') || 'fr'; } catch (e) { /* ignore */ }
   const q = new URLSearchParams(location.search).get('lang');
   applyLang(q === 'ar' || q === 'fr' ? q : saved);
   $$('.lang button').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.lang)));
-  $('#discover').addEventListener('click', e => {
-    e.preventDefault();
-    const total = story.offsetHeight - innerHeight;
-    scrollTo({ top: story.offsetTop + total * 0.3, behavior: 'smooth' });
-  });
   addEventListener('resize', () => (needsLayout = true));
   setInterval(updateOpen, 60000);
-  new IntersectionObserver(([en]) => (stageVisible = en.isIntersecting)).observe(story);
-
-  if (initGL()) {
-    layout();
-    try {
-      const buf = await decodeCar();
-      const loader = new GLTFLoader();
-      loader.setMeshoptDecoder(MeshoptDecoder);
-      const gltf = await loader.parseAsync(buf, '');
-      setupCar(gltf);
-      renderer.compile(scene, camera);
-    } catch (err) {
-      console.error(err);
-      glOK = false;
-    }
-  }
-  tick(performance.now());
-  document.body.classList.add('ready');
-  window.__ready = true;
-  if (!RECORD) requestAnimationFrame(loop);
+  const ready = () => {
+    if (window.__ready) return;
+    tick(performance.now());
+    document.body.classList.add('ready');
+    window.__ready = true;
+    if (!RECORD) requestAnimationFrame(loop);
+  };
+  Promise.all(frames.map(img => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()))).then(ready);
+  setTimeout(() => { if (!window.__ready) ready(); }, 4000);
+  if (location.hash === '#inscription') showForm();
 }
-
 boot();
