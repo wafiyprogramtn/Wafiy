@@ -119,16 +119,16 @@ function applyLang(l) {
 /* ====================== story: keyframe images ====================== */
 // Labels are anchored on the keyframe images in normalised coordinates (0..1).
 const LABELS = [
-  { id: 'engine', grp: 1, k: 1, x: 0.30, y: 0.47, h: 96, hm: 58, t: 'l1.engine', v: 'l1.engine.v', cls: 'ok' },
-  { id: 'brakes', grp: 1, k: 1, x: 0.32, y: 0.62, h: 34, hm: 18, t: 'l1.brakes', v: 'l1.brakes.v', cls: 'warn' },
-  { id: 'battery', grp: 1, k: 1, x: 0.37, y: 0.44, h: 150, hm: 98, t: 'l1.battery', v: 'l1.battery.v', cls: 'ok' },
-  { id: 'elec', grp: 1, k: 1, x: 0.46, y: 0.45, h: 46, hm: 138, t: 'l1.elec', v: 'l1.elec.v', cls: 'ok' },
-  { id: 'susp', grp: 1, k: 1, x: 0.68, y: 0.58, h: 60, hm: 40, t: 'l1.susp', v: 'l1.susp.v', cls: 'ok' },
-  { id: 'body', grp: 2, k: 2, x: 0.56, y: 0.22, h: 40, hm: 30, t: 'l2.body', cls: 'red' },
-  { id: 'engine2', grp: 2, k: 2, x: 0.40, y: 0.62, h: 40, hm: 30, t: 'l2.engine', cls: 'red' },
-  { id: 'cabin', grp: 2, k: 2, x: 0.55, y: 0.45, h: 40, hm: 30, t: 'l2.cabin', cls: 'red' },
-  { id: 'trans', grp: 2, k: 2, x: 0.60, y: 0.62, h: 70, hm: 50, t: 'l2.trans', cls: 'red' },
-  { id: 'brk2', grp: 2, k: 2, x: 0.56, y: 0.83, h: 40, hm: 30, t: 'l2.brakes', cls: 'red' },
+  { id: 'battery', grp: 1, k: 1, x: 0.27, y: 0.50, h: 150, hm: 104, t: 'l1.battery', v: 'l1.battery.v', cls: 'ok' },
+  { id: 'engine', grp: 1, k: 1, x: 0.37, y: 0.55, h: 88, hm: 62, t: 'l1.engine', v: 'l1.engine.v', cls: 'ok' },
+  { id: 'elec', grp: 1, k: 1, x: 0.455, y: 0.47, h: 130, hm: 150, t: 'l1.elec', v: 'l1.elec.v', cls: 'ok' },
+  { id: 'brakes', grp: 1, k: 1, x: 0.475, y: 0.67, h: 30, hm: 22, t: 'l1.brakes', v: 'l1.brakes.v', cls: 'warn' },
+  { id: 'susp', grp: 1, k: 1, x: 0.74, y: 0.55, h: 60, hm: 40, t: 'l1.susp', v: 'l1.susp.v', cls: 'ok' },
+  { id: 'body', grp: 2, k: 2, x: 0.53, y: 0.21, h: 36, hm: 26, t: 'l2.body', cls: 'red' },
+  { id: 'cabin', grp: 2, k: 2, x: 0.64, y: 0.29, h: 70, hm: 50, t: 'l2.cabin', cls: 'red' },
+  { id: 'engine2', grp: 2, k: 2, x: 0.31, y: 0.61, h: 50, hm: 36, t: 'l2.engine', cls: 'red' },
+  { id: 'trans', grp: 2, k: 2, x: 0.55, y: 0.66, h: 40, hm: 30, t: 'l2.trans', cls: 'red' },
+  { id: 'brk2', grp: 2, k: 2, x: 0.41, y: 0.70, h: 90, hm: 64, t: 'l2.brakes', cls: 'red' },
 ];
 
 function buildLabels() {

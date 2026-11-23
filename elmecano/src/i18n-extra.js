@@ -1,6 +1,14 @@
 // Copy for the trainings section, sign-up popup and new navigation (merged into I18N).
 export const EXTRA = {
   fr: {
+    'pt.kicker': 'Diagnostic complet',
+    'pt.title': 'Ce que nous <em>inspectons.</em>',
+    'pt.engine.t': 'Moteur', 'pt.engine.d': 'Diagnostic électronique, turbo, injection, fuites et performances.',
+    'pt.gearbox.t': 'Boîte de vitesses', 'pt.gearbox.d': 'Embrayage, passages de rapports, convertisseur et vidange.',
+    'pt.front.t': 'Train avant & freins', 'pt.front.d': 'Amortisseurs, rotules, disques, plaquettes et étriers.',
+    'pt.rear.t': 'Train arrière', 'pt.rear.d': 'Bras de suspension, silentblocs, ressorts et géométrie.',
+    'pt.drivetrain.t': 'Transmission', 'pt.drivetrain.d': 'Cardans, arbres de transmission, différentiels et roulements.',
+    'pt.body.t': 'Structure & carrosserie', 'pt.body.d': 'Châssis, traces de choc et contrôle anti-corrosion.',
     'nav.courses': 'Formations',
     'nav.signup': 'S’inscrire',
     'hero.cta2': 'Nos formations',
@@ -49,6 +57,14 @@ export const EXTRA = {
     'mbar.signup': 'S’inscrire',
   },
   ar: {
+    'pt.kicker': 'تشخيص شامل',
+    'pt.title': 'ما الذي <em>نفحصه.</em>',
+    'pt.engine.t': 'المحرك', 'pt.engine.d': 'تشخيص إلكتروني، التوربو، الحقن، التسربات والأداء.',
+    'pt.gearbox.t': 'علبة السرعات', 'pt.gearbox.d': 'الدبرياج، تبديل السرعات، المحول وتغيير الزيت.',
+    'pt.front.t': 'الجهاز الأمامي والفرامل', 'pt.front.d': 'المساعدات، المفاصل، الأقراص، الوسادات والفكوك.',
+    'pt.rear.t': 'الجهاز الخلفي', 'pt.rear.d': 'أذرع التعليق، الوسائد المطاطية، النوابض والهندسة.',
+    'pt.drivetrain.t': 'ناقل الحركة', 'pt.drivetrain.d': 'المفاصل، أعمدة النقل، الفوارق والكريات.',
+    'pt.body.t': 'الهيكل والبدنة', 'pt.body.d': 'الشاسي، آثار الحوادث وفحص التآكل.',
     'nav.courses': 'التكوينات',
     'nav.signup': 'سجّل الآن',
     'hero.cta2': 'تكويناتنا',
