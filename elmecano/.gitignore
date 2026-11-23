@@ -2,3 +2,5 @@ node_modules/
 model/src/
 .dev.vars
 .wrangler/
+tools/.assets.js
+.worker/

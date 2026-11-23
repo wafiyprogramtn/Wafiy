@@ -5,4 +5,4 @@ compatibility_date = "2025-09-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "elmecano-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "36220ddf-a84c-41eb-ba4f-be2899869281"
